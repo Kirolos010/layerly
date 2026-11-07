@@ -1,364 +1,60 @@
 <?php
 /**
- * AI Design Studio - AI Client
+ * AI Design Studio - AI Client Facade
  * 
- * Supports:
- * - Primary provider: Google Gemini API (structured JSON output with responseSchema)
- * - Automatic fallback: Groq or OpenRouter (OpenAI-compatible chat completions)
- * - Automatic single-retry on invalid JSON responses
- * - Strict bilingual error translation and logging
+ * Provides backwards-compatible API layer for AI operations.
+ * Modular implementation is divided across:
+ * - includes/ai/GeminiClient.php       (Google Gemini text, vision, and ListModels)
+ * - includes/ai/HuggingFaceClient.php  (RMBG background removal)
+ * - includes/ai/PollinationsClient.php (Text-free background illustration generation)
+ * - includes/ai/ProviderChain.php      (Failover, deadlines, 429 flood control, JSON repair)
+ * - includes/ai/Prompts.php            (Structured schemas and system prompts)
  */
 
 defined('APP_INIT') or define('APP_INIT', true);
 
 require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/sanitizer.php';
+require_once __DIR__ . '/ai/Prompts.php';
+require_once __DIR__ . '/ai/GeminiClient.php';
+require_once __DIR__ . '/ai/HuggingFaceClient.php';
+require_once __DIR__ . '/ai/PollinationsClient.php';
+require_once __DIR__ . '/ai/ProviderChain.php';
 
 /**
- * Return JSON schema representation for Google Gemini API structured output
+ * Gemini responseSchema for structured Canvas JSON generation
  */
 function get_design_gemini_schema(): array {
-    return [
-        'type' => 'OBJECT',
-        'properties' => [
-            'canvas' => [
-                'type' => 'OBJECT',
-                'properties' => [
-                    'width'                   => ['type' => 'INTEGER'],
-                    'height'                  => ['type' => 'INTEGER'],
-                    'background'              => ['type' => 'STRING'],
-                    'background_image_prompt' => ['type' => 'STRING'],
-                ],
-                'required' => ['width', 'height', 'background']
-            ],
-            'objects' => [
-                'type' => 'ARRAY',
-                'items' => [
-                    'type' => 'OBJECT',
-                    'properties' => [
-                        'type'        => ['type' => 'STRING', 'enum' => ['text', 'rect', 'circle', 'triangle', 'line', 'image']],
-                        'text'        => ['type' => 'STRING'],
-                        'left'        => ['type' => 'NUMBER'],
-                        'top'         => ['type' => 'NUMBER'],
-                        'width'       => ['type' => 'NUMBER'],
-                        'height'      => ['type' => 'NUMBER'],
-                        'fill'        => ['type' => 'STRING'],
-                        'stroke'      => ['type' => 'STRING'],
-                        'strokeWidth' => ['type' => 'NUMBER'],
-                        'fontFamily'  => ['type' => 'STRING'],
-                        'fontSize'    => ['type' => 'NUMBER'],
-                        'fontWeight'  => ['type' => 'STRING'],
-                        'textAlign'   => ['type' => 'STRING'],
-                        'direction'   => ['type' => 'STRING', 'enum' => ['rtl', 'ltr']],
-                        'angle'       => ['type' => 'NUMBER'],
-                        'opacity'     => ['type' => 'NUMBER'],
-                        'rx'          => ['type' => 'NUMBER'],
-                        'imageQuery'  => ['type' => 'STRING'],
-                    ],
-                    'required' => ['type', 'left', 'top', 'width', 'height', 'fill']
-                ]
-            ]
-        ],
-        'required' => ['canvas', 'objects']
-    ];
+    return Prompts::getDesignSchema();
 }
 
 /**
- * Call Google Gemini API
- * 
- * @param string $systemPrompt
- * @param string $userPrompt
- * @param array|null $schema
- * @param bool $jsonMode
- * @return array ['success' => bool, 'content' => ?string, 'code' => ?string, 'error' => ?string]
+ * Call Google Gemini API (generateContent)
  */
-function call_gemini_api(string $systemPrompt, string $userPrompt, ?array $schema = null, bool $jsonMode = true): array {
-    $apiKey = defined('GEMINI_API_KEY') ? trim(GEMINI_API_KEY) : '';
-    if (empty($apiKey)) {
-        return ['success' => false, 'code' => 'NO_KEY', 'error' => 'Gemini API key is not configured.'];
+function call_gemini_api(string $systemPrompt, string $userPrompt, ?array $schema = null, $jsonMode = true, ?string $overrideKey = null): array {
+    if (is_string($jsonMode)) {
+        $overrideKey = $jsonMode;
+        $jsonMode = true;
     }
-
-    $primaryModel = ai_get_validated_gemini_model('text');
-    $modelsToTry = array_unique(array_filter([
-        $primaryModel,
-        'gemini-3.8-flash',
-        'gemini-3-flash-preview',
-        'gemini-flash-latest'
-    ]));
-
-    $payload = [
-        'contents' => [
-            [
-                'role' => 'user',
-                'parts' => [
-                    ['text' => $userPrompt]
-                ]
-            ]
-        ],
-        'systemInstruction' => [
-            'parts' => [
-                ['text' => $systemPrompt]
-            ]
-        ],
-        'generationConfig' => [
-            'temperature' => 0.4,
-            'maxOutputTokens' => 8192,
-        ]
-    ];
-
-    if ($jsonMode) {
-        $payload['generationConfig']['responseMimeType'] = 'application/json';
-        if ($schema !== null) {
-            $payload['generationConfig']['responseSchema'] = $schema;
-        }
-    }
-
-    $timeout = defined('AI_CURL_TIMEOUT') ? AI_CURL_TIMEOUT : 55;
-    $lastError = null;
-
-    foreach ($modelsToTry as $model) {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
-
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json; charset=utf-8'
-            ],
-            CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
-            CURLOPT_TIMEOUT        => $timeout,
-            CURLOPT_CONNECTTIMEOUT => 7,
-            CURLOPT_SSL_VERIFYPEER => true,
-        ]);
-
-        $raw = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlErr = curl_error($ch);
-        $curlErrNo = curl_errno($ch);
-        curl_close($ch);
-
-        if ($curlErrNo === CURLE_OPERATION_TIMEDOUT) {
-            app_log("Gemini ({$model}) cURL timeout ({$timeout}s)", 'WARNING', 'ai.log');
-            $lastError = ['success' => false, 'code' => 'TIMEOUT', 'error' => t('ai_timeout')];
-            continue; // try next model if timeout was model-specific
-        }
-
-        if ($curlErr) {
-            app_log("Gemini ({$model}) cURL error: {$curlErr}", 'ERROR', 'ai.log');
-            $lastError = ['success' => false, 'code' => 'CURL_ERR', 'error' => $curlErr];
-            continue;
-        }
-
-        $res = json_decode((string)$raw, true);
-
-        if ($httpCode === 429) {
-            app_log("Gemini ({$model}) 429 Quota Exceeded. Trying fallback model...", 'WARNING', 'ai.log');
-            $lastError = ['success' => false, 'code' => 'QUOTA_EXCEEDED', 'error' => t('ai_quota_exceeded')];
-            continue;
-        }
-
-        if ($httpCode >= 400 || !empty($res['error'])) {
-            $msg = $res['error']['message'] ?? "HTTP error {$httpCode}";
-            app_log("Gemini API ({$model}) error ({$httpCode}): {$msg}", 'WARNING', 'ai.log');
-            $lastError = ['success' => false, 'code' => "HTTP_{$httpCode}", 'error' => $msg];
-            continue;
-        }
-
-        $content = $res['candidates'][0]['content']['parts'][0]['text'] ?? null;
-        if ($content === null) {
-            app_log("Gemini ({$model}) empty candidates: {$raw}", 'ERROR', 'ai.log');
-            $lastError = ['success' => false, 'code' => 'EMPTY_RESPONSE', 'error' => t('ai_invalid_response')];
-            continue;
-        }
-
-        return ['success' => true, 'content' => $content, 'model' => $model, 'code' => null, 'error' => null];
-    }
-
-    return $lastError ?: ['success' => false, 'code' => 'ALL_MODELS_FAILED', 'error' => t('ai_invalid_response')];
+    return GeminiClient::callText($systemPrompt, $userPrompt, $schema, (bool)$jsonMode, $overrideKey);
 }
 
 /**
- * Call secondary fallback AI provider (Groq or OpenRouter)
- * 
- * @param string $systemPrompt
- * @param string $userPrompt
- * @param bool $jsonMode
- * @return array ['success' => bool, 'content' => ?string, 'code' => ?string, 'error' => ?string]
+ * Call secondary fallback provider (Groq or OpenRouter)
  */
 function call_fallback_api(string $systemPrompt, string $userPrompt, bool $jsonMode = true): array {
-    $provider = defined('FALLBACK_PROVIDER') ? strtolower(trim(FALLBACK_PROVIDER)) : '';
-    $apiKey   = defined('FALLBACK_API_KEY') ? trim(FALLBACK_API_KEY) : '';
-    $model    = defined('FALLBACK_MODEL') && FALLBACK_MODEL ? trim(FALLBACK_MODEL) : '';
-
-    if (empty($provider) || empty($apiKey)) {
-        return ['success' => false, 'code' => 'NO_FALLBACK', 'error' => 'No fallback provider configured.'];
-    }
-
-    $url = ($provider === 'openrouter') 
-        ? 'https://openrouter.ai/api/v1/chat/completions'
-        : 'https://api.groq.com/openai/v1/chat/completions';
-
-    if (empty($model)) {
-        $model = ($provider === 'openrouter') ? 'meta-llama/llama-3.3-70b-instruct:free' : 'llama-3.3-70b-versatile';
-    }
-
-    $messages = [
-        ['role' => 'system', 'content' => $systemPrompt],
-        ['role' => 'user', 'content' => $userPrompt]
-    ];
-
-    $payload = [
-        'model'       => $model,
-        'messages'    => $messages,
-        'temperature' => 0.4,
-    ];
-
-    if ($jsonMode) {
-        $payload['response_format'] = ['type' => 'json_object'];
-    }
-
-    $headers = [
-        'Content-Type: application/json; charset=utf-8',
-        "Authorization: Bearer {$apiKey}"
-    ];
-
-    if ($provider === 'openrouter') {
-        $headers[] = 'HTTP-Referer: http://localhost';
-        $headers[] = 'X-Title: AI Design Studio';
-    }
-
-    $timeout = defined('AI_CURL_TIMEOUT') ? AI_CURL_TIMEOUT : 55;
-
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER     => $headers,
-        CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_CONNECTTIMEOUT => 7,
-        CURLOPT_SSL_VERIFYPEER => true,
-    ]);
-
-    $raw = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr = curl_error($ch);
-    curl_close($ch);
-
-    if ($curlErr) {
-        app_log("Fallback ({$provider}) cURL error: {$curlErr}", 'ERROR', 'ai.log');
-        return ['success' => false, 'code' => 'FALLBACK_CURL_ERR', 'error' => $curlErr];
-    }
-
-    $res = json_decode((string)$raw, true);
-
-    if ($httpCode >= 400 || !empty($res['error'])) {
-        $msg = $res['error']['message'] ?? "Fallback HTTP error {$httpCode}";
-        app_log("Fallback ({$provider}) API error ({$httpCode}): {$msg}", 'ERROR', 'ai.log');
-        return ['success' => false, 'code' => "FALLBACK_HTTP_{$httpCode}", 'error' => $msg];
-    }
-
-    $content = $res['choices'][0]['message']['content'] ?? null;
-    if ($content === null) {
-        app_log("Fallback ({$provider}) empty response", 'ERROR', 'ai.log');
-        return ['success' => false, 'code' => 'FALLBACK_EMPTY', 'error' => t('ai_invalid_response')];
-    }
-
-    return ['success' => true, 'content' => $content, 'model' => $model, 'code' => null, 'error' => null];
+    return ProviderChain::callFallback($systemPrompt, $userPrompt, $jsonMode);
 }
 
 /**
- * Universal AI Caller with automatic secondary provider fallback
- * The only allowed fallback is a real second provider that is actually configured.
- * 
- * @param string $systemPrompt
- * @param string $userPrompt
- * @param array|null $schema
- * @param bool $jsonMode
- * @return array ['success' => bool, 'content' => ?string, 'provider' => string, 'model' => ?string, 'code' => ?string, 'error' => ?string]
+ * Dispatch an AI request through the ordered provider chain
  */
 function ai_dispatch(string $systemPrompt, string $userPrompt, ?array $schema = null, bool $jsonMode = true): array {
-    $geminiKey = defined('GEMINI_API_KEY') ? trim(GEMINI_API_KEY) : '';
-    $fallbackKey = defined('FALLBACK_API_KEY') ? trim(FALLBACK_API_KEY) : '';
-
-    if (empty($geminiKey) && empty($fallbackKey)) {
-        app_log("No AI API keys configured in config.php", 'ERROR', 'ai.log');
-        return [
-            'success'  => false,
-            'content'  => null,
-            'provider' => 'none',
-            'model'    => null,
-            'code'     => 'NO_KEY',
-            'error'    => t('ai_missing_key')
-        ];
-    }
-
-    $geminiRes = null;
-    $fallbackRes = null;
-
-    // 1. Try Gemini API first if key exists
-    if (!empty($geminiKey)) {
-        $geminiRes = call_gemini_api($systemPrompt, $userPrompt, $schema, $jsonMode);
-        if ($geminiRes['success']) {
-            return [
-                'success'  => true,
-                'content'  => $geminiRes['content'],
-                'provider' => 'gemini',
-                'model'    => $geminiRes['model'] ?? (defined('GEMINI_MODEL') ? GEMINI_MODEL : 'gemini-3-flash-preview'),
-                'code'     => null,
-                'error'    => null
-            ];
-        }
-
-        app_log("Gemini failed ({$geminiRes['code']}). Attempting fallback provider if configured...", 'WARNING', 'ai.log');
-    }
-
-    // 2. Try Fallback Provider (Groq / OpenRouter) if configured
-    if (!empty($fallbackKey)) {
-        $fallbackRes = call_fallback_api($systemPrompt, $userPrompt, $jsonMode);
-        if ($fallbackRes['success']) {
-            return [
-                'success'  => true,
-                'content'  => $fallbackRes['content'],
-                'provider' => defined('FALLBACK_PROVIDER') ? FALLBACK_PROVIDER : 'fallback',
-                'model'    => $fallbackRes['model'] ?? (defined('FALLBACK_MODEL') ? FALLBACK_MODEL : 'llama-3.3-70b-versatile'),
-                'code'     => null,
-                'error'    => null
-            ];
-        }
-
-        app_log("Fallback provider also failed ({$fallbackRes['code']}).", 'ERROR', 'ai.log');
-    }
-
-    // Return explicit bilingual error with the real failure reason
-    $primaryErr = $geminiRes['error'] ?? t('ai_invalid_response');
-    $primaryCode = $geminiRes['code'] ?? 'AI_FAILED';
-
-    if (!empty($fallbackKey) && !empty($fallbackRes['error'])) {
-        $errMessage = t('ai_fallback_failed') . " (" . $fallbackRes['error'] . ")";
-        $errCode = $fallbackRes['code'] ?? $primaryCode;
-    } else {
-        $errMessage = $primaryErr;
-        $errCode = $primaryCode;
-    }
-
-    return [
-        'success'  => false,
-        'content'  => null,
-        'provider' => 'none',
-        'model'    => null,
-        'code'     => $errCode,
-        'error'    => $errMessage
-    ];
+    return ProviderChain::dispatch($systemPrompt, $userPrompt, $schema, $jsonMode);
 }
 
 /**
- * Endpoint Helper: Enhance short idea into detailed design brief
- * 
- * @param string $rawIdea
- * @param string|null $lang
- * @return array ['success' => bool, 'enhanced_prompt' => string, 'detected_lang' => string, 'provider' => string, 'error' => ?string]
+ * Enhance a user's rough idea into a detailed creative brief
  */
 function ai_enhance_prompt(string $rawIdea, ?string $lang = null): array {
     $rawIdea = trim($rawIdea);
@@ -388,7 +84,7 @@ CRITICAL RULES:
 
     $userPrompt = "Please expand and enhance this design idea into a complete design brief in " . ($isArabic ? "Arabic" : "English") . ":\n\"{$rawIdea}\"";
 
-    $res = ai_dispatch($systemInstruction, $userPrompt, null, false);
+    $res = ProviderChain::dispatch($systemInstruction, $userPrompt, null, false);
 
     if (!$res['success'] || empty($res['content'])) {
         return [
@@ -409,104 +105,28 @@ CRITICAL RULES:
 }
 
 /**
- * Endpoint Helper: Generate complete design JSON
- * 
- * @param string $prompt
- * @param int $width
- * @param int $height
- * @param array $options
- * @return array ['success' => bool, 'data' => array, 'provider' => string, 'error' => ?string]
+ * Generate complete design JSON layout
  */
 function ai_generate_design(string $prompt, int $width = 1080, int $height = 1080, array $options = []): array {
     $prompt = trim($prompt);
     if (empty($prompt)) {
-        return [
-            'success' => false,
-            'error'   => t('prompt_required')
-        ];
+        return ['success' => false, 'error' => t('prompt_required')];
     }
-
-    // Clamp canvas dimensions
-    $width = max(100, min(4000, $width));
-    $height = max(100, min(4000, $height));
 
     $isArabic = is_arabic_text($prompt) || ($options['language'] ?? '') === 'ar';
-    $targetLang = $isArabic ? 'Arabic' : 'English';
-
-    $designType = $options['design_type'] ?? 'social_post';
-    $style      = $options['style'] ?? 'modern';
-    $colorMood  = $options['color_mood'] ?? 'vibrant';
-
-    $systemInstruction = "You are an elite vector design AI specializing in Fabric.js canvas generation.
-Generate a structured JSON representation of an editable graphic design.
-
-DESIGN REQUIREMENTS:
-1. Canvas bounds: All visual elements MUST be positioned thoughtfully within width={$width} and height={$height}.
-2. Visual Hierarchy: Create high-impact visual design. Include distinct elements:
-   - Background cards or decorative shapes (rect, circle, triangle, line)
-   - Promotional badges or pills
-   - Prominent main headline (fontSize 40-72, bold)
-   - Supporting subtitle or details (fontSize 20-32)
-   - Call-to-action button (container rect + button text)
-   - Placeholder image object if relevant (with descriptive 'imageQuery')
-3. Typography & Fonts: ONLY use fonts from this allowed list:
-   - Arabic: 'Cairo', 'Tajawal', 'Almarai', 'Amiri', 'Reem Kufi'
-   - English/Latin: 'Poppins', 'Montserrat', 'Playfair Display', 'Roboto'
-4. Text Direction & Alignment:
-   - For Arabic text: ALWAYS set 'direction': 'rtl', 'textAlign': 'right' (or 'center' for badges/buttons).
-   - For English text: set 'direction': 'ltr', 'textAlign': 'left' (or 'center').
-5. Contrast & Color Palette: Ensure high contrast between text fill and its background. Use clean hex codes like '#ffffff', '#1e293b', '#f59e0b'.
-6. Schema Compliance: Return ONLY a valid JSON object matching the exact schema:
-{
-  \"canvas\": {\"width\": {$width}, \"height\": {$height}, \"background\": \"#hex\"},
-  \"objects\": [
-    {
-      \"type\": \"text|rect|circle|triangle|line|image\",
-      \"text\": \"\",
-      \"left\": 0,
-      \"top\": 0,
-      \"width\": 100,
-      \"height\": 100,
-      \"fill\": \"#hex\",
-      \"stroke\": \"#hex\",
-      \"strokeWidth\": 0,
-      \"fontFamily\": \"Cairo\",
-      \"fontSize\": 24,
-      \"fontWeight\": \"normal\",
-      \"textAlign\": \"center\",
-      \"direction\": \"rtl\",
-      \"angle\": 0,
-      \"opacity\": 1,
-      \"rx\": 0,
-      \"imageQuery\": \"\"
-    }
-  ]
-}
-7. Reply language: The text elements in the design MUST be in {$targetLang}.
-8. Limit: Generate between 6 and 25 well-crafted objects. No markdown, no preface, no trailing explanation.";
-
     $withBg = !empty($options['generate_background']);
-    if ($withBg) {
-        $systemInstruction .= "\n\nCRITICAL BACKGROUND ILLUSTRATION REQUIREMENT:
-The user has enabled 'Generate AI background'.
-1. You MUST set 'canvas.background_image_prompt' in the canvas object.
-2. In 'canvas.background_image_prompt', write an evocative, detailed English image prompt for Pollinations.ai describing a high-quality illustration or atmospheric scene that matches the design theme.
-3. The background image prompt MUST explicitly end with: 'no text, no letters, no words, no watermark, no logos, clean digital art'.
-4. Position all typography, badges, cards, and decorative vector elements so they do NOT obscure the main subject of this background illustration (e.g. if the subject is centered, place text along the top/bottom; if the subject is on the right, place text on the left).";
-    }
 
-    $userPrompt = "Design request:
-Prompt: \"{$prompt}\"
-Canvas: {$width} x {$height}
-Design Type: {$designType}
-Artistic Style: {$style}
-Color Mood: {$colorMood}
-Language: {$targetLang}";
+    $systemInstruction = Prompts::getDesignSystemPrompt($isArabic, $width, $height, $options, $withBg);
+    $schema = Prompts::getDesignSchema();
 
-    $schema = get_design_gemini_schema();
+    $userPrompt = "Create a complete, polished graphic design JSON for the following brief:
+Brief: \"{$prompt}\"
+Design Style: " . ($options['style'] ?? 'modern') . "
+Color Mood: " . ($options['color_mood'] ?? 'balanced') . "
+Canvas: {$width}x{$height} px
+Language: " . ($isArabic ? 'Arabic' : 'English');
 
-    // 1st Attempt
-    $res = ai_dispatch($systemInstruction, $userPrompt, $schema, true);
+    $res = ProviderChain::dispatch($systemInstruction, $userPrompt, $schema, true);
 
     if (!$res['success'] || empty($res['content'])) {
         return [
@@ -518,15 +138,9 @@ Language: {$targetLang}";
 
     $parsed = extract_and_decode_json($res['content']);
 
-    // Automatic single retry if JSON is invalid
+    // Single repair retry if invalid
     if ($parsed === null || !isset($parsed['objects']) || !is_array($parsed['objects'])) {
-        app_log("Invalid JSON on 1st attempt, executing automatic retry...", 'WARNING', 'ai.log');
-        $retryPrompt = $userPrompt . "\n\nCRITICAL FIX: Your previous response was not valid JSON. Return ONLY the raw valid JSON matching the schema without code fences or extra text.";
-        $retryRes = ai_dispatch($systemInstruction, $retryPrompt, $schema, true);
-
-        if ($retryRes['success'] && !empty($retryRes['content'])) {
-            $parsed = extract_and_decode_json($retryRes['content']);
-        }
+        $parsed = ProviderChain::repairJson($res['content'], $systemInstruction, $schema);
     }
 
     if ($parsed === null || !isset($parsed['objects']) || !is_array($parsed['objects'])) {
@@ -543,11 +157,10 @@ Language: {$targetLang}";
         if (empty($bgPrompt)) {
             $bgPrompt = "clean digital illustration of {$prompt}, artistic background, no text, no words";
         }
-        $encodedBgPrompt = urlencode($bgPrompt . ', no text, no letters, clean digital art');
-        $pollinationsUrl = "https://image.pollinations.ai/prompt/{$encodedBgPrompt}?width={$width}&height={$height}&nologo=true";
+        $proxyUrl = PollinationsClient::buildProxyUrl($bgPrompt, $width, $height);
         $bgLayer = [
             'type'         => 'image',
-            'src'          => 'api/proxy-image.php?url=' . urlencode($pollinationsUrl),
+            'src'          => $proxyUrl,
             'left'         => 0,
             'top'          => 0,
             'width'        => $width,
@@ -571,379 +184,143 @@ Language: {$targetLang}";
 }
 
 /**
- * Call Google Gemini Vision API with an image and prompt
- * 
- * @param string $base64Data Raw base64 data (without data:image/... prefix)
- * @param string $mimeType Mime type (e.g. 'image/jpeg', 'image/png')
- * @param string $userPrompt Prompt instructions
- * @param array|null $schema Optional response schema
- * @return array ['success' => bool, 'content' => ?string, 'code' => ?string, 'error' => ?string]
+ * Call Google Gemini Vision API
  */
 function call_gemini_vision_api(string $base64Data, string $mimeType, string $userPrompt, ?array $schema = null): array {
-    $apiKey = defined('GEMINI_API_KEY') ? trim(GEMINI_API_KEY) : '';
-    if (empty($apiKey)) {
-        return ['success' => false, 'code' => 'NO_KEY', 'error' => 'Gemini API key is not configured.'];
-    }
-
-    $model = ai_get_validated_gemini_model('text');
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
-
-    $payload = [
-        'contents' => [
-            [
-                'role' => 'user',
-                'parts' => [
-                    [
-                        'inlineData' => [
-                            'mimeType' => $mimeType,
-                            'data'     => $base64Data
-                        ]
-                    ],
-                    [
-                        'text' => $userPrompt
-                    ]
-                ]
-            ]
-        ],
-        'generationConfig' => [
-            'temperature' => 0.2,
-            'maxOutputTokens' => 8192,
-            'responseMimeType' => 'application/json'
-        ]
-    ];
-
-    if ($schema !== null) {
-        $payload['generationConfig']['responseSchema'] = $schema;
-    }
-
-    $timeout = defined('AI_CURL_TIMEOUT') ? AI_CURL_TIMEOUT : 55;
-
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER     => [
-            'Content-Type: application/json; charset=utf-8'
-        ],
-        CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_CONNECTTIMEOUT => 7,
-        CURLOPT_SSL_VERIFYPEER => true,
-    ]);
-
-    $raw = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr = curl_error($ch);
-    $curlErrNo = curl_errno($ch);
-    curl_close($ch);
-
-    if ($curlErrNo === CURLE_OPERATION_TIMEDOUT) {
-        app_log("Gemini Vision timeout ({$timeout}s)", 'WARNING', 'ai.log');
-        return ['success' => false, 'code' => 'TIMEOUT', 'error' => t('ai_timeout')];
-    }
-
-    if ($curlErr) {
-        app_log("Gemini Vision cURL error: {$curlErr}", 'ERROR', 'ai.log');
-        return ['success' => false, 'code' => 'CURL_ERR', 'error' => $curlErr];
-    }
-
-    $res = json_decode((string)$raw, true);
-
-    if ($httpCode === 429) {
-        return ['success' => false, 'code' => 'QUOTA_EXCEEDED', 'error' => t('ai_quota_exceeded')];
-    }
-
-    if ($httpCode >= 400 || !empty($res['error'])) {
-        $msg = $res['error']['message'] ?? "HTTP error {$httpCode}";
-        app_log("Gemini Vision error ({$httpCode}): {$msg}", 'ERROR', 'ai.log');
-        return ['success' => false, 'code' => "HTTP_{$httpCode}", 'error' => $msg];
-    }
-
-    $content = $res['candidates'][0]['content']['parts'][0]['text'] ?? null;
-    if ($content === null) {
-        return ['success' => false, 'code' => 'EMPTY_RESPONSE', 'error' => t('ai_invalid_response')];
-    }
-
-    return ['success' => true, 'content' => $content, 'code' => null, 'error' => null];
+    return GeminiClient::callVision($base64Data, $mimeType, $userPrompt, $schema);
 }
 
 /**
- * Extract text blocks from an image using Gemini Vision OCR
- * 
- * @param string $imageData Base64 data URL or raw base64 string
- * @param int $imgWidth Target image width in px
- * @param int $imgHeight Target image height in px
- * @return array ['success' => bool, 'blocks' => array, 'error' => ?string]
+ * OCR text extraction from an uploaded image
  */
 function ai_extract_text_from_image(string $imageData, int $imgWidth = 1080, int $imgHeight = 1080): array {
-    $imageData = trim($imageData);
-    if (empty($imageData)) {
-        return ['success' => false, 'error' => t('image_required')];
+    if (empty(trim($imageData))) {
+        return ['success' => false, 'code' => 'EMPTY_IMAGE', 'error' => t('image_empty')];
     }
 
     $mimeType = 'image/jpeg';
-    $rawBase64 = $imageData;
-    if (preg_match('/^data:([^;]+);base64,(.+)$/', $imageData, $matches)) {
+    $base64 = $imageData;
+
+    if (preg_match('/^data:(image\/\w+);base64,(.+)$/', $imageData, $matches)) {
         $mimeType = $matches[1];
-        $rawBase64 = $matches[2];
+        $base64 = $matches[2];
     }
 
-    $prompt = "You are a professional graphic design OCR and layout analyzer.
-Scan the image carefully and extract all distinct text blocks (headlines, subtitles, badges, prices, bullet points, button labels, contact info).
-For each detected text block, output:
-- text: exact transcription of the text in the image.
-- language: 'ar' if Arabic, 'en' if English or Latin.
-- left_percent: horizontal offset percentage of the text from the left edge of the image (0.0 to 100.0).
-- top_percent: vertical offset percentage of the text from the top edge of the image (0.0 to 100.0).
-- width_percent: estimated width percentage of the text block relative to image width (0.0 to 100.0).
-- height_percent: estimated height percentage of the text block relative to image height (0.0 to 100.0).
-- fontSize: approximate font size in pixels (e.g. 18 to 72).
-- fontWeight: 'bold' or 'normal'.
-- fill: approximate hex color of the text (e.g. '#ffffff', '#000000', '#f59e0b').
-- fontFamily: choose the closest match from: 'Cairo', 'Tajawal', 'Almarai', 'Amiri', 'Reem Kufi' (for Arabic) or 'Poppins', 'Montserrat', 'Playfair Display', 'Roboto' (for English).
+    $schema = Prompts::getOcrSchema();
 
-Return ONLY a JSON object matching:
-{
-  \"text_blocks\": [
-    {
-      \"text\": \"...\",
-      \"language\": \"ar|en\",
-      \"left_percent\": 10.5,
-      \"top_percent\": 20.0,
-      \"width_percent\": 50.0,
-      \"height_percent\": 8.0,
-      \"fontSize\": 36,
-      \"fontWeight\": \"bold\",
-      \"fill\": \"#ffffff\",
-      \"fontFamily\": \"Cairo\"
+    $prompt = "You are a professional OCR and graphic design vision system.
+Analyze this design image carefully.
+Detect and extract every text block, word, heading, or label visible in the image.
+For each text block return:
+- text: The exact visible text content
+- left_percent: Horizontal start position as a percentage from left (0 to 100)
+- top_percent: Vertical start position as a percentage from top (0 to 100)
+- fontSize: Estimated font size in pixels (relative to canvas height {$imgHeight}px)
+- fontWeight: 'bold' or 'normal'
+- color: Hex color of the text (e.g. '#ffffff' or '#1e293b')
+- fontFamily: Closest matching Google Font ('Cairo', 'Tajawal', 'Almarai', 'Amiri', 'Reem Kufi' for Arabic; 'Poppins', 'Montserrat', 'Playfair Display', 'Roboto' for English)
+- language: 'ar' for Arabic text, 'en' for English/Latin text
+
+Return ONLY valid JSON matching the schema.";
+
+    $res = GeminiClient::callVision($base64, $mimeType, $prompt, $schema);
+
+    if (!$res['success'] || empty($res['content'])) {
+        return [
+            'success' => false,
+            'code'    => $res['code'] ?? 'OCR_FAILED',
+            'error'   => $res['error'] ?? t('ai_invalid_response'),
+            'blocks'  => []
+        ];
     }
-  ]
-}";
 
-    $schema = [
-        'type' => 'OBJECT',
-        'properties' => [
-            'text_blocks' => [
-                'type' => 'ARRAY',
-                'items' => [
-                    'type' => 'OBJECT',
-                    'properties' => [
-                        'text'           => ['type' => 'STRING'],
-                        'language'       => ['type' => 'STRING', 'enum' => ['ar', 'en']],
-                        'left_percent'   => ['type' => 'NUMBER'],
-                        'top_percent'    => ['type' => 'NUMBER'],
-                        'width_percent'  => ['type' => 'NUMBER'],
-                        'height_percent' => ['type' => 'NUMBER'],
-                        'fontSize'       => ['type' => 'NUMBER'],
-                        'fontWeight'     => ['type' => 'STRING', 'enum' => ['normal', 'bold']],
-                        'fill'           => ['type' => 'STRING'],
-                        'fontFamily'     => ['type' => 'STRING']
-                    ],
-                    'required' => ['text', 'left_percent', 'top_percent']
-                ]
-            ]
-        ],
-        'required' => ['text_blocks']
-    ];
+    $parsed = extract_and_decode_json($res['content']);
+    if ($parsed === null || empty($parsed['blocks']) || !is_array($parsed['blocks'])) {
+        return [
+            'success' => false,
+            'code'    => 'EMPTY_OCR',
+            'error'   => t('ai_invalid_response'),
+            'blocks'  => []
+        ];
+    }
 
-    $res = call_gemini_vision_api($rawBase64, $mimeType, $prompt, $schema);
+    // Normalize coordinates to canvas pixel values
+    $blocks = [];
+    foreach ($parsed['blocks'] as $b) {
+        $text = trim((string)($b['text'] ?? ''));
+        if (empty($text)) continue;
 
-    // If Gemini Vision succeeded and returned JSON content
-    if ($res['success'] && !empty($res['content'])) {
-        $data = extract_and_decode_json($res['content']);
-        if ($data && isset($data['text_blocks']) && is_array($data['text_blocks'])) {
-            $sanitizedBlocks = [];
-            foreach ($data['text_blocks'] as $b) {
-                $t = trim((string)($b['text'] ?? ''));
-                if (empty($t)) continue;
+        $leftPercent = max(0.0, min(100.0, (float)($b['left_percent'] ?? 0)));
+        $topPercent = max(0.0, min(100.0, (float)($b['top_percent'] ?? 0)));
+        $left = round(($leftPercent / 100.0) * $imgWidth);
+        $top = round(($topPercent / 100.0) * $imgHeight);
 
-                $isAr = ($b['language'] ?? '') === 'ar' || is_arabic_text($t);
-                $sanitizedBlocks[] = [
-                    'text'           => $t,
-                    'language'       => $isAr ? 'ar' : 'en',
-                    'left_percent'   => max(0.0, min(100.0, round((float)($b['left_percent'] ?? 0), 2))),
-                    'top_percent'    => max(0.0, min(100.0, round((float)($b['top_percent'] ?? 0), 2))),
-                    'width_percent'  => max(2.0, min(100.0, round((float)($b['width_percent'] ?? 25), 2))),
-                    'height_percent' => max(1.0, min(100.0, round((float)($b['height_percent'] ?? 6), 2))),
-                    'fontSize'       => max(10, min(180, (int)($b['fontSize'] ?? 28))),
-                    'fontWeight'     => ($b['fontWeight'] ?? 'normal') === 'bold' ? 'bold' : 'normal',
-                    'fill'           => sanitize_color($b['fill'] ?? '#ffffff', '#ffffff'),
-                    'fontFamily'     => $isAr ? 'Cairo' : 'Poppins'
-                ];
-            }
-            if (empty($sanitizedBlocks)) {
-                return ['success' => false, 'code' => 'NO_TEXT_DETECTED', 'error' => t('no_text_detected')];
-            }
-            return ['success' => true, 'blocks' => $sanitizedBlocks];
-        }
+        $isAr = is_arabic_text($text) || ($b['language'] ?? '') === 'ar';
+        $blocks[] = [
+            'text'         => $text,
+            'left'         => $left,
+            'top'          => $top,
+            'left_percent' => $leftPercent,
+            'top_percent'  => $topPercent,
+            'fontSize'     => max(12.0, min(200.0, (float)($b['fontSize'] ?? 32))),
+            'fontWeight'   => ($b['fontWeight'] ?? 'normal') === 'bold' ? 'bold' : 'normal',
+            'fill'         => !empty($b['color']) ? $b['color'] : '#ffffff',
+            'fontFamily'   => !empty($b['fontFamily']) ? $b['fontFamily'] : ($isAr ? 'Cairo' : 'Poppins'),
+            'direction'    => $isAr ? 'rtl' : 'ltr',
+            'textAlign'    => $isAr ? 'right' : 'left',
+            'language'     => $isAr ? 'ar' : 'en'
+        ];
     }
 
     return [
-        'success' => false,
-        'code'    => $res['code'] ?? 'VISION_FAILED',
-        'error'   => $res['error'] ?? t('no_text_detected')
+        'success'  => true,
+        'blocks'   => $blocks,
+        'provider' => 'gemini',
+        'model'    => $res['model'] ?? null
     ];
 }
 
 /**
- * Remove background from an image using Hugging Face Inference API (RMBG-1.4 / RMBG-2.0)
- * 
- * @param string $imageData Base64 data URI or binary string or local file path
- * @return array ['success' => bool, 'data_url' => ?string, 'image_url' => ?string, 'error' => ?string, 'code' => ?string]
+ * Remove image background via Hugging Face RMBG
  */
 function ai_remove_background_rmbg(string $imageData): array {
-    $imageData = trim($imageData);
-    if (empty($imageData)) {
-        return ['success' => false, 'code' => 'EMPTY_IMAGE', 'error' => t('image_required')];
-    }
-
-    // Decode binary image
-    $binary = '';
-    if (preg_match('/^data:image\/[^;]+;base64,(.+)$/', $imageData, $matches)) {
-        $binary = base64_decode($matches[1]);
-    } elseif (str_starts_with($imageData, 'api/') || str_starts_with($imageData, 'storage/')) {
-        $path = dirname(__DIR__) . '/' . ltrim($imageData, '/');
-        if (file_exists($path)) {
-            $binary = file_get_contents($path);
-        }
-    } else {
-        $binary = base64_decode($imageData, true) ?: $imageData;
-    }
-
-    if (empty($binary) || strlen($binary) < 50) {
-        return ['success' => false, 'code' => 'INVALID_IMAGE', 'error' => t('image_required')];
-    }
-
-    $token = defined('HUGGINGFACE_API_TOKEN') ? trim(HUGGINGFACE_API_TOKEN) : '';
-    if (empty($token)) {
-        return ['success' => false, 'code' => 'NO_TOKEN', 'error' => t('rmbg_token_missing')];
-    }
-    $model = defined('HUGGINGFACE_RMBG_MODEL') && HUGGINGFACE_RMBG_MODEL ? trim(HUGGINGFACE_RMBG_MODEL) : 'briaai/RMBG-1.4';
-    $url = "https://api-inference.huggingface.co/models/{$model}";
-
-    $headers = [
-        'Content-Type: application/octet-stream',
-        'Authorization: Bearer ' . $token
-    ];
-
-    $timeout = 25;
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER     => $headers,
-        CURLOPT_POSTFIELDS     => $binary,
-        CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_CONNECTTIMEOUT => 8,
-        CURLOPT_SSL_VERIFYPEER => true
-    ]);
-
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr = curl_error($ch);
-    $curlErrNo = curl_errno($ch);
-    curl_close($ch);
-
-    if ($curlErrNo === CURLE_OPERATION_TIMEDOUT) {
-        app_log("Hugging Face RMBG timeout ({$timeout}s)", 'WARNING', 'ai.log');
-        return ['success' => false, 'code' => 'TIMEOUT', 'error' => t('rmbg_failed')];
-    }
-
-    if ($curlErr) {
-        app_log("Hugging Face cURL error: {$curlErr}", 'ERROR', 'ai.log');
-        return ['success' => false, 'code' => 'CURL_ERR', 'error' => t('rmbg_failed')];
-    }
-
-    // Model loading
-    if ($httpCode === 503) {
-        app_log("Hugging Face RMBG 503 model loading: {$response}", 'WARNING', 'ai.log');
-        return ['success' => false, 'code' => 'MODEL_LOADING', 'error' => t('rmbg_model_loading')];
-    }
-
-    // Rate limit
-    if ($httpCode === 429) {
-        app_log("Hugging Face RMBG 429 rate limit: {$response}", 'WARNING', 'ai.log');
-        return ['success' => false, 'code' => 'RATE_LIMIT', 'error' => t('rmbg_rate_limit')];
-    }
-
-    // Auth required or token invalid
-    if ($httpCode === 401 || $httpCode === 403) {
-        app_log("Hugging Face RMBG auth failure ({$httpCode}): {$response}", 'WARNING', 'ai.log');
-        return ['success' => false, 'code' => 'AUTH_REQUIRED', 'error' => t('rmbg_token_missing')];
-    }
-
-    if ($httpCode !== 200 || empty($response)) {
-        app_log("Hugging Face RMBG error ({$httpCode}): {$response}", 'ERROR', 'ai.log');
-        return ['success' => false, 'code' => "HTTP_{$httpCode}", 'error' => t('rmbg_failed')];
-    }
-
-    // Save cutout image
-    $filename = 'cutout_' . time() . '_' . bin2hex(random_bytes(4)) . '.png';
-    $uploadPath = dirname(__DIR__) . '/storage/uploads/' . $filename;
-    file_put_contents($uploadPath, $response);
-
-    return [
-        'success'   => true,
-        'image_url' => 'storage/uploads/' . $filename,
-        'data_url'  => 'data:image/png;base64,' . base64_encode($response),
-        'model'     => $model
-    ];
+    return HuggingFaceClient::removeBackground($imageData);
 }
 
 /**
- * Endpoint Helper: Edit existing design JSON with natural language instruction
- * 
- * @param array $currentDesign
- * @param string $instruction
- * @return array ['success' => bool, 'data' => array, 'provider' => string, 'error' => ?string]
+ * Edit existing design JSON with natural language instruction
  */
 function ai_edit_design(array $currentDesign, string $instruction): array {
     $instruction = trim($instruction);
     if (empty($instruction)) {
-        return [
-            'success' => false,
-            'error'   => t('instruction_required')
-        ];
+        return ['success' => false, 'error' => t('prompt_required')];
     }
 
-    if (empty($currentDesign) || !isset($currentDesign['canvas'])) {
-        return [
-            'success' => false,
-            'error'   => t('design_json_required')
-        ];
-    }
-
-    $width = (int)($currentDesign['canvas']['width'] ?? 1080);
+    $width  = (int)($currentDesign['canvas']['width'] ?? 1080);
     $height = (int)($currentDesign['canvas']['height'] ?? 1080);
-    $currentJsonStr = json_encode($currentDesign, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
-    $isArabicInstruction = is_arabic_text($instruction);
+    $systemInstruction = "You are an expert graphic designer and UI/UX art director.
+A user wants to modify their existing Fabric.js graphic design JSON layout using natural language instructions.
+CRITICAL RULES:
+1. Preserve all existing elements, texts, and IDs unless the user specifically asks to change, move, replace, or delete them.
+2. If the user asks to change colors, update the 'fill' and 'stroke' properties appropriately.
+3. If the user asks to resize or move an element, update 'fontSize', 'width', 'height', 'left', or 'top'.
+4. If the user asks to add an element, insert a new object conforming to the schema.
+5. All Arabic text must have direction='rtl', textAlign='right' or 'center', and use Arabic fonts ('Cairo', 'Tajawal', 'Almarai', 'Amiri', 'Reem Kufi').
+6. Return ONLY the complete, updated valid JSON object conforming to the schema.";
 
-    $systemInstruction = "You are a professional design modification AI for Fabric.js canvas layouts.
-Your task: Update the existing design JSON according to the user's specific edit instruction.
+    $cleanDesignJson = json_encode($currentDesign, JSON_UNESCAPED_UNICODE);
+    $userPrompt = "CURRENT DESIGN JSON:
+{$cleanDesignJson}
 
-EDITING RULES:
-1. Preserve unedited elements: Keep object IDs, types, and properties unless instructed to change or replace them.
-2. If asked to change colors (e.g. 'warmer colors', 'dark mode'): update canvas.background and object fills/strokes coherently while preserving readability and contrast.
-3. If asked to resize or reposition (e.g. 'make title bigger'): adjust fontSize, width, height, left, and top accordingly.
-4. If asked to add elements: append new objects to the 'objects' array following the exact schema.
-5. Allowed fonts:
-   - Arabic: 'Cairo', 'Tajawal', 'Almarai', 'Amiri', 'Reem Kufi'
-   - English: 'Poppins', 'Montserrat', 'Playfair Display', 'Roboto'
-6. Return ONLY the complete updated JSON object with { \"canvas\": {...}, \"objects\": [...] }. No markdown fences, no explanations.";
-
-    $userPrompt = "Current Design JSON:
-{$currentJsonStr}
-
-User Edit Instruction:
+MODIFICATION INSTRUCTION:
 \"{$instruction}\"
 
 Return the complete updated JSON:";
 
-    $schema = get_design_gemini_schema();
+    $schema = Prompts::getDesignSchema();
 
-    // 1st Attempt
-    $res = ai_dispatch($systemInstruction, $userPrompt, $schema, true);
+    $res = ProviderChain::dispatch($systemInstruction, $userPrompt, $schema, true);
 
     if (!$res['success'] || empty($res['content'])) {
         return [
@@ -955,15 +332,8 @@ Return the complete updated JSON:";
 
     $parsed = extract_and_decode_json($res['content']);
 
-    // Automatic single retry if invalid JSON
     if ($parsed === null || !isset($parsed['objects']) || !is_array($parsed['objects'])) {
-        app_log("Invalid JSON on edit attempt 1, executing retry...", 'WARNING', 'ai.log');
-        $retryPrompt = $userPrompt . "\n\nCRITICAL: Return ONLY valid JSON matching { \"canvas\": {...}, \"objects\": [...] }.";
-        $retryRes = ai_dispatch($systemInstruction, $retryPrompt, $schema, true);
-
-        if ($retryRes['success'] && !empty($retryRes['content'])) {
-            $parsed = extract_and_decode_json($retryRes['content']);
-        }
+        $parsed = ProviderChain::repairJson($res['content'], $systemInstruction, $schema);
     }
 
     if ($parsed === null || !isset($parsed['objects']) || !is_array($parsed['objects'])) {
@@ -984,31 +354,15 @@ Return the complete updated JSON:";
     ];
 }
 
-// =============================================================================
-// PHASE 6: AI POSTER PIPELINE (Import & Make Editable + Text to Poster)
-// =============================================================================
-
 /**
- * Return validated Gemini model for text/vision or image operations
- * 
- * @param string $type 'text' | 'image'
- * @return string
+ * Validate configured Gemini model against ListModels API
  */
 function ai_get_validated_gemini_model(string $type = 'text'): string {
-    if ($type === 'image') {
-        return defined('GEMINI_IMAGE_MODEL') && GEMINI_IMAGE_MODEL ? GEMINI_IMAGE_MODEL : 'gemini-2.5-flash-image';
-    }
-    return defined('GEMINI_MODEL') && GEMINI_MODEL ? GEMINI_MODEL : 'gemini-3-flash-preview';
+    return GeminiClient::validateModel($type);
 }
 
 /**
  * Vision analysis for Phase 6 Mode 1 ("Import & Make Editable")
- * Transcribes every text block, language, coordinates, font, colors, glow, and pill badges.
- * Strict rule: Never invent or translate text; transcribe exactly what is visible.
- * 
- * @param string $imagePath Filesystem path to the image
- * @param string $mimeType e.g. 'image/jpeg' or 'image/png'
- * @return array ['success' => bool, 'canvas' => array, 'text_blocks' => array, 'meta' => array, 'error' => ?string]
  */
 function ai_vision_analyze_poster(string $imagePath, string $mimeType = 'image/jpeg'): array {
     $t0 = microtime(true);
@@ -1026,14 +380,6 @@ function ai_vision_analyze_poster(string $imagePath, string $mimeType = 'image/j
     }
     $b64 = base64_encode($raw);
 
-    $apiKey = defined('GEMINI_API_KEY') ? trim(GEMINI_API_KEY) : '';
-    if (empty($apiKey)) {
-        return ['success' => false, 'error' => t('api_key_missing'), 'code' => 'NO_KEY'];
-    }
-
-    $model = ai_get_validated_gemini_model('text');
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . urlencode($apiKey);
-
     $prompt = "You are an expert graphic designer and OCR system.
 Analyze this poster image ({$canvasW}x{$canvasH}).
 Identify and transcribe EVERY text block on the image exactly as written.
@@ -1045,7 +391,7 @@ Output a valid JSON object matching this structure:
   \"text_blocks\": [
     {
       \"id\": \"headline_1\",
-      \"text\": \"دورة برمجة وتطوير الذكاء الاصطناعي\",
+      \"text\": \"Text exactly as shown\",
       \"lang\": \"ar\",
       \"dir\": \"rtl\",
       \"left\": 100,
@@ -1064,165 +410,89 @@ Output a valid JSON object matching this structure:
   ]
 }
 
-Available fonts: Cairo, Tajawal, Almarai, Amiri, Reem Kufi, Poppins, Montserrat, Playfair Display, Roboto.
-If text is inside a button, pill, or badge (like 'احجز مكانك!' or a website outline pill), set 'badge': { \"type\": \"pill\", \"fill\": \"#00e5ff\", \"radius\": 20, \"left\": 100, \"top\": 500, \"width\": 160, \"height\": 40 }.
-Calculate accurate pixel coordinates (left, top, width, height) relative to {$canvasW}x{$canvasH}.
-Return ONLY the raw JSON object without markdown fences or extra explanations.";
+Whitelisted fonts:
+Arabic: 'Cairo', 'Tajawal', 'Almarai', 'Amiri', 'Reem Kufi'
+English: 'Poppins', 'Montserrat', 'Playfair Display', 'Roboto'";
 
-    $payload = [
-        'contents' => [
-            [
-                'parts' => [
-                    ['text' => $prompt],
-                    [
-                        'inlineData' => [
-                            'mimeType' => $mimeType,
-                            'data'     => $b64
-                        ]
-                    ]
-                ]
-            ]
-        ],
-        'generationConfig' => [
-            'responseMimeType' => 'application/json',
-            'temperature'      => 0.1,
-            'maxOutputTokens'  => 8192
-        ]
-    ];
+    $res = GeminiClient::callVision($b64, $mimeType, $prompt);
 
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json; charset=utf-8'],
-        CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_TIMEOUT        => 45,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => true
-    ]);
-
-    $res = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr = curl_error($ch);
-    $curlErrNo = curl_errno($ch);
-    curl_close($ch);
-
-    $elapsed = round((microtime(true) - $t0) * 1000);
-
-    if ($curlErrNo === CURLE_OPERATION_TIMEDOUT) {
-        return ['success' => false, 'error' => t('ai_timeout'), 'code' => 'TIMEOUT'];
-    }
-
-    if ($httpCode === 429) {
-        return ['success' => false, 'error' => t('ai_quota_exceeded'), 'code' => 'QUOTA_EXCEEDED'];
-    }
-
-    if ($httpCode >= 400 || $curlErr) {
-        $msg = $curlErr ?: "Gemini Vision error (HTTP {$httpCode})";
-        app_log("Gemini Vision OCR failed ({$httpCode}): {$msg}", 'ERROR', 'ai.log');
-        return ['success' => false, 'error' => $msg, 'code' => "HTTP_{$httpCode}"];
-    }
-
-    $json = json_decode((string)$res, true);
-    $rawText = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
-    $parsed = extract_and_decode_json($rawText);
-
-    if ($parsed === null || !isset($parsed['text_blocks']) || !is_array($parsed['text_blocks'])) {
-        app_log("Invalid JSON from Gemini Vision OCR: " . substr($rawText, 0, 300), 'ERROR', 'ai.log');
-        return ['success' => false, 'error' => t('ai_invalid_response'), 'code' => 'INVALID_JSON'];
-    }
-
-    // Sanitize and validate detected text blocks
-    $allowedFonts = ['Cairo', 'Tajawal', 'Almarai', 'Amiri', 'Reem Kufi', 'Poppins', 'Montserrat', 'Playfair Display', 'Roboto'];
-    $sanitizedBlocks = [];
-    foreach ($parsed['text_blocks'] as $i => $block) {
-        $text = trim((string)($block['text'] ?? ''));
-        if ($text === '') continue;
-
-        $lang = ($block['lang'] ?? '') === 'ar' || is_arabic_text($text) ? 'ar' : 'en';
-        $dir = $lang === 'ar' ? 'rtl' : 'ltr';
-        $font = (string)($block['fontFamily'] ?? ($lang === 'ar' ? 'Cairo' : 'Poppins'));
-        if (!in_array($font, $allowedFonts, true)) {
-            $font = $lang === 'ar' ? 'Cairo' : 'Poppins';
-        }
-
-        $left = max(0, min($canvasW, (float)($block['left'] ?? 0)));
-        $top = max(0, min($canvasH, (float)($block['top'] ?? 0)));
-        $w = max(20, min($canvasW, (float)($block['width'] ?? 200)));
-        $h = max(16, min($canvasH, (float)($block['height'] ?? 40)));
-        $fontSize = max(10, min(140, (float)($block['fontSize'] ?? 24)));
-        $color = (string)($block['color'] ?? '#ffffff');
-        if (!preg_match('/^#[0-9a-fA-F]{3,8}$/', $color)) {
-            $color = '#ffffff';
-        }
-
-        $glowColor = !empty($block['glowColor']) && preg_match('/^#[0-9a-fA-F]{3,8}$/', $block['glowColor']) ? $block['glowColor'] : null;
-        $glowBlur = isset($block['glowBlur']) ? max(0, min(30, (int)$block['glowBlur'])) : 0;
-
-        $badge = null;
-        if (!empty($block['badge']) && is_array($block['badge'])) {
-            $b = $block['badge'];
-            $bType = in_array($b['type'] ?? '', ['pill', 'outline_pill', 'rect'], true) ? $b['type'] : 'pill';
-            $badge = [
-                'type'   => $bType,
-                'fill'   => !empty($b['fill']) ? $b['fill'] : '#00e5ff',
-                'stroke' => !empty($b['stroke']) ? $b['stroke'] : null,
-                'radius' => isset($b['radius']) ? max(0, min(50, (int)$b['radius'])) : 18,
-                'left'   => max(0, (float)($b['left'] ?? $left)),
-                'top'    => max(0, (float)($b['top'] ?? $top)),
-                'width'  => max(20, (float)($b['width'] ?? $w)),
-                'height' => max(16, (float)($b['height'] ?? $h)),
-            ];
-        }
-
-        $sanitizedBlocks[] = [
-            'id'         => (string)($block['id'] ?? "block_{$i}"),
-            'text'       => $text,
-            'lang'       => $lang,
-            'dir'        => $dir,
-            'left'       => round($left, 1),
-            'top'        => round($top, 1),
-            'width'      => round($w, 1),
-            'height'     => round($h, 1),
-            'fontSize'   => round($fontSize, 1),
-            'fontWeight' => in_array($block['fontWeight'] ?? '', ['bold', 'normal', '700', '800', '900'], true) ? $block['fontWeight'] : 'bold',
-            'color'      => $color,
-            'glowColor'  => $glowColor,
-            'glowBlur'   => $glowBlur,
-            'align'      => in_array($block['align'] ?? '', ['center', 'right', 'left'], true) ? $block['align'] : ($lang === 'ar' ? 'right' : 'left'),
-            'fontFamily' => $font,
-            'badge'      => $badge
+    if (!$res['success'] || empty($res['content'])) {
+        return [
+            'success' => false,
+            'error'   => $res['error'] ?? 'Vision analysis failed.',
+            'code'    => $res['code'] ?? 'VISION_FAILED'
         ];
     }
 
-    $canvas = [
-        'width'    => $canvasW,
-        'height'   => $canvasH,
-        'bg_color' => $parsed['canvas']['bg_color'] ?? '#020b14',
-        'theme'    => $parsed['canvas']['theme'] ?? 'dark'
-    ];
+    $data = extract_and_decode_json($res['content']);
+    if (!$data || empty($data['text_blocks'])) {
+        return [
+            'success' => false,
+            'error'   => 'Could not extract text structure from image.',
+            'code'    => 'PARSE_ERROR'
+        ];
+    }
+
+    // Whitelist fonts
+    $allowedFonts = ['Cairo', 'Tajawal', 'Almarai', 'Amiri', 'Reem Kufi', 'Poppins', 'Montserrat', 'Playfair Display', 'Roboto'];
+    $allowedLangs = ['ar', 'en'];
+
+    $sanitizedBlocks = [];
+    foreach ($data['text_blocks'] as $idx => $b) {
+        $text = trim((string)($b['text'] ?? ''));
+        if (empty($text)) continue;
+
+        $isAr = is_arabic_text($text) || (($b['lang'] ?? '') === 'ar');
+        $lang = $isAr ? 'ar' : 'en';
+        $dir  = $isAr ? 'rtl' : 'ltr';
+
+        $font = (string)($b['fontFamily'] ?? '');
+        if (!in_array($font, $allowedFonts, true)) {
+            $font = $isAr ? 'Cairo' : 'Poppins';
+        }
+
+        $block = [
+            'id'         => (string)($b['id'] ?? ('block_' . $idx)),
+            'text'       => $text,
+            'lang'       => $lang,
+            'dir'        => $dir,
+            'left'       => (float)($b['left'] ?? 0),
+            'top'        => (float)($b['top'] ?? 0),
+            'width'      => (float)($b['width'] ?? 200),
+            'height'     => (float)($b['height'] ?? 40),
+            'fontSize'   => (float)($b['fontSize'] ?? 24),
+            'fontWeight' => ($b['fontWeight'] ?? 'normal') === 'bold' ? 'bold' : 'normal',
+            'color'      => (string)($b['color'] ?? ($isAr ? '#ffffff' : '#000000')),
+            'glowColor'  => !empty($b['glowColor']) ? (string)$b['glowColor'] : null,
+            'glowBlur'   => !empty($b['glowBlur']) ? (float)$b['glowBlur'] : 0,
+            'align'      => in_array($b['align'] ?? '', ['left', 'center', 'right'], true) ? $b['align'] : ($isAr ? 'right' : 'left'),
+            'fontFamily' => $font,
+            'badge'      => !empty($b['badge']) && is_array($b['badge']) ? $b['badge'] : null
+        ];
+        $sanitizedBlocks[] = $block;
+    }
+
+    $elapsed = round((microtime(true) - $t0) * 1000);
 
     return [
         'success'     => true,
-        'canvas'      => $canvas,
+        'canvas'      => [
+            'width'    => $canvasW,
+            'height'   => $canvasH,
+            'bg_color' => $data['canvas']['bg_color'] ?? '#020b14',
+            'theme'    => $data['canvas']['theme'] ?? 'dark'
+        ],
         'text_blocks' => $sanitizedBlocks,
         'meta'        => [
-            'provider'   => 'gemini',
-            'model'      => $model,
-            'latency_ms' => $elapsed
-        ],
-        'error'       => null
+            'count'      => count($sanitizedBlocks),
+            'latency_ms' => $elapsed,
+            'model'      => $res['model'] ?? null
+        ]
     ];
 }
 
 /**
- * PHP GD-based perimeter-sampled inpainting engine
- * Samples adjacent background pixels around bounding boxes, interpolates, and feathers with blur.
- * 
- * @param string $sourcePath
- * @param array $textBlocks
- * @param string $outputPath
- * @return bool
+ * Pure PHP GD Inpainting Engine: Text Box Erase & Soft Diffusion Fallback
  */
 function ai_poster_inpaint_gd(string $sourcePath, array $textBlocks, string $outputPath): bool {
     $info = @getimagesize($sourcePath);
@@ -1251,7 +521,6 @@ function ai_poster_inpaint_gd(string $sourcePath, array $textBlocks, string $out
     $imgW = imagesx($img);
     $imgH = imagesy($img);
 
-    // Collect all bounding boxes: text blocks and badges
     $boxes = [];
     foreach ($textBlocks as $b) {
         if (isset($b['left'], $b['top'], $b['width'], $b['height'])) {
@@ -1259,8 +528,7 @@ function ai_poster_inpaint_gd(string $sourcePath, array $textBlocks, string $out
                 'x' => (int)$b['left'],
                 'y' => (int)$b['top'],
                 'w' => (int)$b['width'],
-                'h' => (int)$b['height'],
-                'padding' => 6
+                'h' => (int)$b['height']
             ];
         }
         if (!empty($b['badge']) && is_array($b['badge'])) {
@@ -1270,131 +538,78 @@ function ai_poster_inpaint_gd(string $sourcePath, array $textBlocks, string $out
                     'x' => (int)$badge['left'],
                     'y' => (int)$badge['top'],
                     'w' => (int)$badge['width'],
-                    'h' => (int)$badge['height'],
-                    'padding' => 8
+                    'h' => (int)$badge['height']
                 ];
             }
         }
     }
 
     foreach ($boxes as $box) {
-        $pad = $box['padding'];
-        $bx1 = max(0, $box['x'] - $pad);
-        $by1 = max(0, $box['y'] - $pad);
-        $bx2 = min($imgW - 1, $box['x'] + $box['w'] + $pad);
-        $by2 = min($imgH - 1, $box['y'] + $box['h'] + $pad);
-        $bw = $bx2 - $bx1 + 1;
-        $bh = $by2 - $by1 + 1;
-        if ($bw <= 0 || $bh <= 0) continue;
+        $pad = 6;
+        $x0 = max(0, $box['x'] - $pad);
+        $y0 = max(0, $box['y'] - $pad);
+        $x1 = min($imgW - 1, $box['x'] + $box['w'] + $pad);
+        $y1 = min($imgH - 1, $box['y'] + $box['h'] + $pad);
 
-        // Sample perimeter pixels
-        $borderTop = [];
-        $borderBot = [];
-        $borderLeft = [];
-        $borderRight = [];
+        $boxW = $x1 - $x0 + 1;
+        $boxH = $y1 - $y0 + 1;
 
-        for ($px = $bx1; $px <= $bx2; $px += 2) {
-            if ($by1 > 0) {
-                $c = imagecolorat($img, $px, max(0, $by1 - 2));
-                $borderTop[$px] = [($c >> 16) & 0xFF, ($c >> 8) & 0xFF, $c & 0xFF];
-            }
-            if ($by2 < $imgH - 1) {
-                $c = imagecolorat($img, $px, min($imgH - 1, $by2 + 2));
-                $borderBot[$px] = [($c >> 16) & 0xFF, ($c >> 8) & 0xFF, $c & 0xFF];
-            }
-        }
-        for ($py = $by1; $py <= $by2; $py += 2) {
-            if ($bx1 > 0) {
-                $c = imagecolorat($img, max(0, $bx1 - 2), $py);
-                $borderLeft[$py] = [($c >> 16) & 0xFF, ($c >> 8) & 0xFF, $c & 0xFF];
-            }
-            if ($bx2 < $imgW - 1) {
-                $c = imagecolorat($img, min($imgW - 1, $bx2 + 2), $py);
-                $borderRight[$py] = [($c >> 16) & 0xFF, ($c >> 8) & 0xFF, $c & 0xFF];
-            }
+        if ($boxW <= 0 || $boxH <= 0) continue;
+
+        $topColors = [];
+        $botColors = [];
+        for ($x = $x0; $x <= $x1; $x += max(1, (int)($boxW / 12))) {
+            $sampleYTop = max(0, $y0 - 4);
+            $sampleYBot = min($imgH - 1, $y1 + 4);
+            $topColors[] = imagecolorat($img, $x, $sampleYTop);
+            $botColors[] = imagecolorat($img, $x, $sampleYBot);
         }
 
-        // Bilinear distance-weighted interpolation
-        for ($py = $by1; $py <= $by2; $py++) {
-            $vRatio = ($bh > 1) ? ($py - $by1) / ($bh - 1) : 0.5;
-            for ($px = $bx1; $px <= $bx2; $px++) {
-                $hRatio = ($bw > 1) ? ($px - $bx1) / ($bw - 1) : 0.5;
-
-                $r_vert = 0; $g_vert = 0; $b_vert = 0; $has_vert = false;
-                $sTop = $borderTop[$px] ?? ($borderTop[$px - 1] ?? ($borderTop[$px + 1] ?? null));
-                $sBot = $borderBot[$px] ?? ($borderBot[$px - 1] ?? ($borderBot[$px + 1] ?? null));
-                if ($sTop && $sBot) {
-                    $r_vert = $sTop[0] * (1 - $vRatio) + $sBot[0] * $vRatio;
-                    $g_vert = $sTop[1] * (1 - $vRatio) + $sBot[1] * $vRatio;
-                    $b_vert = $sTop[2] * (1 - $vRatio) + $sBot[2] * $vRatio;
-                    $has_vert = true;
-                } elseif ($sTop) {
-                    $r_vert = $sTop[0]; $g_vert = $sTop[1]; $b_vert = $sTop[2]; $has_vert = true;
-                } elseif ($sBot) {
-                    $r_vert = $sBot[0]; $g_vert = $sBot[1]; $b_vert = $sBot[2]; $has_vert = true;
-                }
-
-                $r_horiz = 0; $g_horiz = 0; $b_horiz = 0; $has_horiz = false;
-                $sLeft = $borderLeft[$py] ?? ($borderLeft[$py - 1] ?? ($borderLeft[$py + 1] ?? null));
-                $sRight = $borderRight[$py] ?? ($borderRight[$py - 1] ?? ($borderRight[$py + 1] ?? null));
-                if ($sLeft && $sRight) {
-                    $r_horiz = $sLeft[0] * (1 - $hRatio) + $sRight[0] * $hRatio;
-                    $g_horiz = $sLeft[1] * (1 - $hRatio) + $sRight[1] * $hRatio;
-                    $b_horiz = $sLeft[2] * (1 - $hRatio) + $sRight[2] * $hRatio;
-                    $has_horiz = true;
-                } elseif ($sLeft) {
-                    $r_horiz = $sLeft[0]; $g_horiz = $sLeft[1]; $b_horiz = $sLeft[2]; $has_horiz = true;
-                } elseif ($sRight) {
-                    $r_horiz = $sRight[0]; $g_horiz = $sRight[1]; $b_horiz = $sRight[2]; $has_horiz = true;
-                }
-
-                if ($has_vert && $has_horiz) {
-                    $fr = (int)round(($r_vert + $r_horiz) / 2);
-                    $fg = (int)round(($g_vert + $g_horiz) / 2);
-                    $fb = (int)round(($b_vert + $b_horiz) / 2);
-                } elseif ($has_vert) {
-                    $fr = (int)round($r_vert); $fg = (int)round($g_vert); $fb = (int)round($b_vert);
-                } elseif ($has_horiz) {
-                    $fr = (int)round($r_horiz); $fg = (int)round($g_horiz); $fb = (int)round($b_horiz);
-                } else {
-                    continue;
-                }
-
-                $col = imagecolorallocate($img, $fr, $fg, $fb);
-                imagesetpixel($img, $px, $py, $col);
-            }
+        $avgRTop = 0; $avgGTop = 0; $avgBTop = 0;
+        foreach ($topColors as $c) {
+            $avgRTop += ($c >> 16) & 0xFF;
+            $avgGTop += ($c >> 8) & 0xFF;
+            $avgBTop += $c & 0xFF;
         }
+        $countTop = max(1, count($topColors));
+        $avgRTop /= $countTop; $avgGTop /= $countTop; $avgBTop /= $countTop;
 
-        // Apply feather blur
-        $region = imagecreatetruecolor($bw, $bh);
-        imagecopy($region, $img, 0, 0, $bx1, $by1, $bw, $bh);
-        imagefilter($region, IMG_FILTER_GAUSSIAN_BLUR);
-        imagefilter($region, IMG_FILTER_SMOOTH, 2);
-        imagecopy($img, $region, $bx1, $by1, 0, 0, $bw, $bh);
-        imagedestroy($region);
+        $avgRBot = 0; $avgGBot = 0; $avgBBot = 0;
+        foreach ($botColors as $c) {
+            $avgRBot += ($c >> 16) & 0xFF;
+            $avgGBot += ($c >> 8) & 0xFF;
+            $avgBBot += $c & 0xFF;
+        }
+        $countBot = max(1, count($botColors));
+        $avgRBot /= $countBot; $avgGBot /= $countBot; $avgBBot /= $countBot;
+
+        for ($y = $y0; $y <= $y1; $y++) {
+            $ratio = $boxH > 1 ? ($y - $y0) / ($boxH - 1) : 0.5;
+            $r = (int)round((1.0 - $ratio) * $avgRTop + $ratio * $avgRBot);
+            $g = (int)round((1.0 - $ratio) * $avgGTop + $ratio * $avgGBot);
+            $b = (int)round((1.0 - $ratio) * $avgBTop + $ratio * $avgBBot);
+
+            $noise = rand(-4, 4);
+            $r = max(0, min(255, $r + $noise));
+            $g = max(0, min(255, $g + $noise));
+            $b = max(0, min(255, $b + $noise));
+
+            $color = imagecolorallocate($img, $r, $g, $b);
+            imageline($img, $x0, $y, $x1, $y, $color);
+        }
     }
 
-    $dir = dirname($outputPath);
-    if (!is_dir($dir)) {
-        @mkdir($dir, 0755, true);
+    for ($i = 0; $i < 2; $i++) {
+        imagefilter($img, IMG_FILTER_SMOOTH, 2);
     }
 
-    $saved = imagejpeg($img, $outputPath, 92);
+    $ok = imagejpeg($img, $outputPath, 92);
     imagedestroy($img);
-    return $saved;
+    return $ok;
 }
 
 /**
- * Clean plate generator for Phase 6 Mode 1.
- * Removes text/letters/badges while keeping background pixel-identical and aspect-ratio matched.
- * Attempts Gemini image model first; if fails/quota, falls back seamlessly to PHP GD inpainting with notice.
- * 
- * @param string $sourcePath Filesystem path to original image
- * @param array $textBlocks Detected text blocks
- * @param int $canvasW Width in px
- * @param int $canvasH Height in px
- * @param bool $forceFallback If true, forces inpainting fallback (for testing or user preference)
- * @return array ['success' => bool, 'clean_plate_url' => string, 'clean_plate_path' => string, 'method' => string, 'fallback_used' => bool, 'notice' => ?string, 'latency_ms' => int]
+ * Generate clean plate background for imported poster
  */
 function ai_generate_clean_plate(string $sourcePath, array $textBlocks, int $canvasW, int $canvasH, bool $forceFallback = false): array {
     $t0 = microtime(true);
@@ -1408,7 +623,6 @@ function ai_generate_clean_plate(string $sourcePath, array $textBlocks, int $can
     $outputPath = $uploadDir . '/' . $filename;
     $cleanUrl = 'api/upload.php?file=' . $filename;
 
-    // Check if clean plate was already generated for this exact image and blocks
     if (file_exists($outputPath) && filesize($outputPath) > 1000) {
         $elapsed = round((microtime(true) - $t0) * 1000);
         return [
@@ -1428,13 +642,12 @@ function ai_generate_clean_plate(string $sourcePath, array $textBlocks, int $can
     $method = 'inpainting_fallback';
     $notice = t('clean_plate_fallback_notice');
 
-    // Try Gemini image model if configured and not forced fallback
     if (!$forceFallback && !empty($imageModel) && !empty($apiKey)) {
-        // Attempt image model text removal
         $raw = @file_get_contents($sourcePath);
         if ($raw) {
             $b64 = base64_encode($raw);
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$imageModel}:generateContent?key=" . urlencode($apiKey);
+            $baseUrl = defined('GEMINI_API_BASE_URL') ? rtrim(GEMINI_API_BASE_URL, '/') : 'https://generativelanguage.googleapis.com/v1beta';
+            $url = "{$baseUrl}/models/{$imageModel}:generateContent?key=" . urlencode($apiKey);
             $prompt = "Remove all text, letters, numbers, badges, and logos from this image. Fill in the background seamlessly and preserve every other element, subject, lighting, and texture at the exact same resolution and aspect ratio.";
             $payload = [
                 'contents' => [
@@ -1446,13 +659,14 @@ function ai_generate_clean_plate(string $sourcePath, array $textBlocks, int $can
                     ]
                 ]
             ];
+            $timeout = defined('GEMINI_TIMEOUT') ? (int)GEMINI_TIMEOUT : 30;
             $ch = curl_init($url);
             curl_setopt_array($ch, [
                 CURLOPT_POST => true,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
                 CURLOPT_POSTFIELDS => json_encode($payload),
-                CURLOPT_TIMEOUT => 30,
+                CURLOPT_TIMEOUT => $timeout,
                 CURLOPT_SSL_VERIFYPEER => true
             ]);
             $res = curl_exec($ch);
@@ -1474,7 +688,6 @@ function ai_generate_clean_plate(string $sourcePath, array $textBlocks, int $can
         }
     }
 
-    // Inpainting fallback if image model was not used or failed
     if ($usedFallback) {
         $ok = ai_poster_inpaint_gd($sourcePath, $textBlocks, $outputPath);
         if (!$ok) {
@@ -1501,12 +714,6 @@ function ai_generate_clean_plate(string $sourcePath, array $textBlocks, int $can
 
 /**
  * Art-direction pass for Phase 6 Mode 2 ("Text to Poster")
- * Generates visual concept, composition zones, text-free image prompt, and structured typography.
- * STRICT RULE: NEVER invent URLs, phone numbers, prices, dates, discounts, or brand names not provided by the user.
- * 
- * @param string $prompt
- * @param array $options
- * @return array
  */
 function ai_art_direct_poster(string $prompt, array $options = []): array {
     $t0 = microtime(true);
@@ -1527,170 +734,74 @@ CRITICAL ANTI-HALLUCINATION RULES:
 1. NEVER invent or fabricate URLs, website domains (e.g. www.something.com), phone numbers, email addresses, prices, discounts, or dates that the user did not explicitly mention in their request.
 2. If the user did not specify a website, leave the website/contact field out entirely.
 3. If the user did not specify a price or discount, do NOT invent prices (e.g. '$99' or '50% off').
-4. Generate authentic Arabic/English copy: punchy headline, engaging subtitle, and relevant feature bullet points strictly derived from the user's intent.
-5. Create composition zones so that typography is placed in clean open areas (e.g. on the left, top, or bottom) and NEVER collides with the central hero visual subject.
-6. The image prompt must be in English, descriptive, and explicitly state: 'textless, no words, no letters, no logos, no typography, 8k octane render'.";
+4. Generate authentic Arabic/English copy: punchy headline, engaging subtitle, and relevant feature bullet points strictly derived from the user's intent.";
 
-    $userMessage = "Design a promotional poster for:
-\"{$prompt}\"
-Canvas size: {$targetW}x{$targetH} px.
+    $userPrompt = "Create a complete art direction plan for:
+Topic: \"{$prompt}\"
+Target Canvas: {$targetW}x{$targetH} px
+Style Preset: {$stylePreset}";
 
-Return ONLY a valid JSON object matching:
-{
-  \"canvas\": { \"width\": {$targetW}, \"height\": {$targetH}, \"bg_color\": \"#020b14\", \"theme\": \"dark\" },
-  \"concept\": \"Description of visual concept and atmosphere\",
-  \"palette\": { \"primary\": \"#00f0ff\", \"secondary\": \"#ffffff\", \"accent\": \"#0088ff\", \"bg\": \"#020b14\" },
-  \"composition_zones\": {
-    \"visual_zone\": { \"left\": 500, \"top\": 100, \"width\": 540, \"height\": 700, \"description\": \"Hero subject placement on right side\" },
-    \"text_zone\": { \"left\": 50, \"top\": 100, \"width\": 440, \"height\": 700, \"description\": \"Typography and features on left side\" }
-  },
-  \"image_prompt\": \"Cinematic futuristic 3D octane render of a cyber developer at multi-monitor workstation, glowing holographic AI neural network, dark sci-fi aesthetic, volumetric lighting, photorealistic, textless, no letters, no words, no watermark\",
-  \"text_blocks\": [
-    {
-      \"id\": \"headline\",
-      \"text\": \"عنوان البوستر هنا\",
-      \"lang\": \"ar\",
-      \"dir\": \"rtl\",
-      \"left\": 60,
-      \"top\": 80,
-      \"width\": 960,
-      \"height\": 70,
-      \"fontSize\": 48,
-      \"fontWeight\": \"bold\",
-      \"color\": \"#00f0ff\",
-      \"glowColor\": \"#00c8ff\",
-      \"glowBlur\": 12,
-      \"align\": \"center\",
-      \"fontFamily\": \"Cairo\",
-      \"badge\": null
-    }
-  ]
-}
+    $schema = Prompts::getPosterArtDirectionSchema();
 
-Available fonts: Cairo, Tajawal, Almarai, Amiri, Reem Kufi, Poppins, Montserrat, Playfair Display, Roboto.
-If text is a CTA button or badge, specify 'badge': { \"type\": \"pill\", \"fill\": \"#00e5ff\", \"radius\": 20, \"left\": ..., \"top\": ..., \"width\": ..., \"height\": ... }.";
-
-    $res = ai_dispatch($systemInstruction, $userMessage, null, true);
-    $elapsed = round((microtime(true) - $t0) * 1000);
+    $res = ProviderChain::dispatch($systemInstruction, $userPrompt, $schema, true);
 
     if (!$res['success'] || empty($res['content'])) {
         return [
             'success' => false,
-            'error'   => $res['error'] ?? t('ai_invalid_response'),
-            'code'    => 'ART_DIRECTION_FAILED'
+            'code'    => $res['code'] ?? 'ART_DIRECTION_FAILED',
+            'error'   => $res['error'] ?? 'Art direction failed.'
         ];
     }
 
-    $parsed = extract_and_decode_json($res['content']);
-    if ($parsed === null || !isset($parsed['text_blocks']) || !is_array($parsed['text_blocks'])) {
+    $data = extract_and_decode_json($res['content']);
+    $art = $data['art_direction'] ?? null;
+
+    if (!$art || empty($art['text_blocks'])) {
         return [
             'success' => false,
-            'error'   => t('ai_invalid_response'),
-            'code'    => 'INVALID_JSON'
+            'code'    => 'INVALID_ART_JSON',
+            'error'   => 'Could not parse art direction response.'
         ];
     }
 
-    // Strict validation: enforce that no invented URLs or fake domains were hallucinated
-    $sanitizedBlocks = [];
-    foreach ($parsed['text_blocks'] as $i => $block) {
-        $text = trim((string)($block['text'] ?? ''));
-        if ($text === '') continue;
+    // Strict Anti-Hallucination Verification
+    $userHadUrl = (bool)preg_match('/(www\.[a-z0-9\-]+\.[a-z]{2,}|https?:\/\/[^\s]+|\.com|\.org|\.net)/i', $prompt);
+    $userHadPrice = (bool)preg_match('/(\$\d+|\d+\$|\d+\s*(دولار|جنيه|ريال|usd))/i', $prompt);
 
-        // If user prompt does NOT contain 'www.' or '.com' or 'http', strip hallucinated URLs
-        $hasUrlPattern = (bool)preg_match('/(www\.[a-z0-9\-]+\.[a-z]{2,}|https?:\/\/[^\s]+|\.com|\.org|\.net)/i', $text);
-        $userHadUrl = (bool)preg_match('/(www\.[a-z0-9\-]+\.[a-z]{2,}|https?:\/\/[^\s]+|\.com|\.org|\.net)/i', $prompt);
-        if ($hasUrlPattern && !$userHadUrl) {
-            continue; // Remove hallucinated URL block completely!
+    $filteredBlocks = [];
+    foreach ($art['text_blocks'] as $block) {
+        $txt = $block['text'] ?? '';
+        if (!$userHadUrl && preg_match('/(www\.[a-z0-9\-]+\.[a-z]{2,}|https?:\/\/[^\s]+|\.com|\.org|\.net)/i', $txt)) {
+            continue;
         }
-
-        $sanitizedBlocks[] = $block;
+        if (!$userHadPrice && preg_match('/(\$\d+|\d+\$|\d+\s*(دولار|جنيه|ريال|usd))/i', $txt)) {
+            continue;
+        }
+        $filteredBlocks[] = $block;
     }
-    $parsed['text_blocks'] = $sanitizedBlocks;
+    $art['text_blocks'] = $filteredBlocks;
+
+    $elapsed = round((microtime(true) - $t0) * 1000);
 
     return [
-        'success'        => true,
-        'art_direction'  => $parsed,
-        'meta'           => [
-            'provider'   => $res['provider'],
-            'latency_ms' => $elapsed
-        ]
+        'success'       => true,
+        'art_direction' => $art,
+        'latency_ms'    => $elapsed,
+        'model'         => $res['model'] ?? null
     ];
 }
 
 /**
- * Generate text-free background art for Mode 2 ("Text to Poster")
- * Saves into /storage/uploads/ and serves via safe upload proxy.
- * 
- * @param string $imagePrompt
- * @param int $width
- * @param int $height
- * @return array ['success' => bool, 'image_url' => string, 'file_path' => string, 'meta' => array, 'error' => ?string]
+ * Generate text-free AI poster background image
  */
 function ai_generate_poster_background(string $imagePrompt, int $width = 1080, int $height = 1080): array {
-    $t0 = microtime(true);
-    $uploadDir = dirname(__DIR__) . '/storage/uploads';
-    if (!is_dir($uploadDir)) {
-        @mkdir($uploadDir, 0755, true);
-    }
+    $proxyUrl = PollinationsClient::buildProxyUrl($imagePrompt, $width, $height);
+    $directUrl = PollinationsClient::buildImageUrl($imagePrompt, $width, $height);
 
-    $hash = md5($imagePrompt . "_{$width}x{$height}");
-    $filename = "poster_bg_{$hash}.jpg";
-    $localPath = $uploadDir . '/' . $filename;
-    $imageUrl = 'api/upload.php?file=' . $filename;
-
-    if (file_exists($localPath) && filesize($localPath) > 5000) {
-        $elapsed = round((microtime(true) - $t0) * 1000);
-        return [
-            'success'    => true,
-            'image_url'  => $imageUrl,
-            'file_path'  => $localPath,
-            'meta'       => [
-                'provider'   => 'cached',
-                'latency_ms' => $elapsed
-            ]
-        ];
-    }
-
-    // Enforce text-free modifiers in the prompt
-    $cleanPrompt = trim($imagePrompt) . ", high quality, photorealistic, textless, no text, no letters, no words, octane render";
-    $encodedPrompt = urlencode($cleanPrompt);
-    $pollinationsUrl = "https://image.pollinations.ai/prompt/{$encodedPrompt}?width={$width}&height={$height}&nologo=true&model=flux";
-
-    $ch = curl_init($pollinationsUrl);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_TIMEOUT        => 35,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => true
-    ]);
-
-    $raw = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $curlErr = curl_error($ch);
-    curl_close($ch);
-
-    $elapsed = round((microtime(true) - $t0) * 1000);
-
-    if ($httpCode === 200 && $raw && strlen($raw) > 2000) {
-        file_put_contents($localPath, $raw);
-        return [
-            'success'    => true,
-            'image_url'  => $imageUrl,
-            'file_path'  => $localPath,
-            'meta'       => [
-                'provider'   => 'pollinations',
-                'latency_ms' => $elapsed
-            ]
-        ];
-    }
-
-    app_log("Poster background generation failed ({$httpCode}): {$curlErr}", 'ERROR', 'ai.log');
     return [
-        'success' => false,
-        'error'   => t('poster_image_failed'),
-        'code'    => 'IMAGE_GEN_FAILED'
+        'success'   => true,
+        'image_url' => $proxyUrl,
+        'direct_url'=> $directUrl,
+        'model'     => 'pollinations'
     ];
 }
-
-

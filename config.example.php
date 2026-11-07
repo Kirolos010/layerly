@@ -29,6 +29,9 @@ define('DB_CHARSET', 'utf8mb4');         // Full Unicode support including emoji
 define('GEMINI_API_KEY', '');
 define('GEMINI_MODEL', 'gemini-3-flash-preview'); // Free tier model (e.g. gemini-3.5-flash or gemini-2.5-flash)
 define('GEMINI_IMAGE_MODEL', 'gemini-2.5-flash-image'); // Optional Gemini image-edit/generation model
+define('GEMINI_API_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'); // Gemini API base endpoint
+define('GEMINI_TIMEOUT', 25);            // Timeout for Gemini calls in seconds
+define('GEMINI_CONNECT_TIMEOUT', 7);     // Connect timeout in seconds
 
 // -----------------------------------------------------------------------------
 // Optional Secondary AI Fallback Provider (Groq or OpenRouter)
@@ -38,6 +41,9 @@ define('GEMINI_IMAGE_MODEL', 'gemini-2.5-flash-image'); // Optional Gemini image
 define('FALLBACK_PROVIDER', 'groq');     // 'groq' or 'openrouter' (leave blank to disable)
 define('FALLBACK_API_KEY', '');          // Fallback provider API key
 define('FALLBACK_MODEL', 'llama-3.3-70b-versatile'); // Groq: llama-3.3-70b-versatile | OpenRouter: meta-llama/llama-3.3-70b-instruct:free
+define('FALLBACK_API_BASE_URL', 'https://api.groq.com/openai/v1/chat/completions'); // Fallback API endpoint
+define('FALLBACK_TIMEOUT', 20);          // Timeout in seconds
+define('FALLBACK_CONNECT_TIMEOUT', 5);   // Connect timeout in seconds
 
 // -----------------------------------------------------------------------------
 // Hugging Face API Configuration (Background Removal: RMBG-1.4 / RMBG-2.0)
@@ -45,11 +51,20 @@ define('FALLBACK_MODEL', 'llama-3.3-70b-versatile'); // Groq: llama-3.3-70b-vers
 // Optional free access token from: https://huggingface.co/settings/tokens
 define('HUGGINGFACE_API_TOKEN', '');
 define('HUGGINGFACE_RMBG_MODEL', 'briaai/RMBG-1.4'); // Default RMBG model
+define('HUGGINGFACE_API_BASE_URL', 'https://api-inference.huggingface.co/models'); // Hugging Face base endpoint
+define('HUGGINGFACE_TIMEOUT', 25);       // Timeout in seconds
+define('HUGGINGFACE_CONNECT_TIMEOUT', 8); // Connect timeout in seconds
 
 // -----------------------------------------------------------------------------
 // Pollinations.ai Configuration (Free Text-Free Background Illustrations)
 // -----------------------------------------------------------------------------
-define('POLLINATIONS_ENABLED', true); // Free text-free background generation
+define('POLLINATIONS_ENABLED', true);    // Free text-free background generation
+define('POLLINATIONS_BASE_URL', 'https://image.pollinations.ai'); // Pollinations base URL
+
+// -----------------------------------------------------------------------------
+// AI Request Pipeline & Deadlines
+// -----------------------------------------------------------------------------
+define('AI_REQUEST_DEADLINE', 30);       // Max total seconds allowed across all providers before aborting
 
 // -----------------------------------------------------------------------------
 // Rate Limiting (Per IP address, tracked in MySQL)
