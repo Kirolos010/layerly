@@ -4,9 +4,7 @@
  */
 
 define('APP_INIT', true);
-
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 send_security_headers();
 init_secure_session();
@@ -27,7 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = strtolower(trim((string)($_POST['email'] ?? '')));
 
     if (empty($email) || !validate_email($email)) {
-        // Return generic notice so email validity is not probed
         $notice = t('reset_link_sent_notice');
     } else {
         $res = request_password_reset($email);
@@ -43,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="<?= e($currentLang) ?>" dir="<?= e($dir) ?>" data-theme="dark">
 <head>
+    <base href="<?= e(url('/')) ?>/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e(t('forgot_password')) ?> - <?= e(t('app_name')) ?></title>
@@ -67,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="<?= e(asset('assets/css/style.css')) ?>">
 </head>
 <body>
     <!-- Background Animated Mesh Gradient Orbs -->
@@ -81,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
         <header class="app-header">
             <div>
-                <a href="index.php" style="text-decoration: none;">
+                <a href="<?= e(url('/')) ?>" style="text-decoration: none;">
                     <h1 class="app-title"><?= e(t('app_name')) ?></h1>
                 </a>
             </div>
@@ -90,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="theme-icon">☀️</span> <span class="theme-text"><?= e(t('theme_light')) ?></span>
                 </button>
                 <a href="?lang=<?= $isArabic ? 'en' : 'ar' ?>" class="btn-sm">🌐 <?= e(t('switch_language')) ?></a>
-                <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
+                <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
             </div>
         </header>
 
@@ -122,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="forgot-password.php">
+                <form method="POST" action="<?= e(url('forgot-password')) ?>">
                     <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
 
                     <div class="form-group">
@@ -136,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </form>
 
                 <div class="auth-footer">
-                    <a href="login.php"><?= e(t('remember_password')) ?> <?= e(t('login')) ?></a>
+                    <a href="<?= e(url('login')) ?>"><?= e(t('remember_password')) ?> <?= e(t('login')) ?></a>
                 </div>
             </div>
         </div>
@@ -149,4 +147,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 </body>
 </html>
-

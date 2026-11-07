@@ -7,8 +7,7 @@ define('APP_INIT', true);
 
 http_response_code(404);
 
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 send_security_headers();
 init_secure_session();
@@ -18,13 +17,14 @@ $currentLang = get_current_lang();
 $isArabic = ($currentLang === 'ar');
 $dir = $isArabic ? 'rtl' : 'ltr';
 $otherLang = $isArabic ? 'en' : 'ar';
-$switchLangUrl = '?lang=' . $otherLang;
+$switchLangUrl = url('404?lang=' . $otherLang);
 ?>
 <!DOCTYPE html>
 <html lang="<?= e($currentLang) ?>" dir="<?= e($dir) ?>" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="<?= e(url('/')) ?>/">
     <title>404 - <?= e(t('page_not_found')) ?> - <?= e(t('app_name')) ?></title>
     
     <!-- Zero-Flash Theme Auto-Initializer -->
@@ -74,10 +74,10 @@ $switchLangUrl = '?lang=' . $otherLang;
         </p>
 
         <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
-            <a href="index.php" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">
+            <a href="<?= e(url('/')) ?>" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">
                 🚀 <?= e(t('return_to_studio')) ?>
             </a>
-            <a href="projects.php" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+            <a href="<?= e(url('projects')) ?>" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
                 📁 <?= e(t('my_designs')) ?>
             </a>
             <a href="<?= e($switchLangUrl) ?>" class="btn btn-secondary" style="padding: 0.75rem 1.25rem;">

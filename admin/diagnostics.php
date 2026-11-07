@@ -7,9 +7,10 @@
  * outgoing AI API network connectivity, and storage permissions.
  */
 
-define('APP_INIT', true);
+defined('APP_INIT') or define('APP_INIT', true);
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
-$configFile = __DIR__ . '/config.php';
+$configFile = BASE_PATH . '/config.php';
 $hasConfig = file_exists($configFile);
 if ($hasConfig) {
     require_once $configFile;
@@ -99,7 +100,7 @@ $dbPass = false;
 $dbDetail = '';
 if ($hasConfig) {
     try {
-        require_once __DIR__ . '/includes/db.php';
+        require_once BASE_PATH . '/includes/db.php';
         $pdo = get_db();
         $dbPass = true;
         
@@ -197,7 +198,7 @@ $tests[] = [
 
 // Phase 6: Poster Rate Limiting & Cache Storage
 $posterLimit = defined('POSTER_DAILY_LIMIT') ? POSTER_DAILY_LIMIT : 5;
-$cacheDir = __DIR__ . '/storage/cache';
+$cacheDir = BASE_PATH . '/storage/cache';
 if (!is_dir($cacheDir)) {
     @mkdir($cacheDir, 0755, true);
 }
@@ -211,8 +212,8 @@ $tests[] = [
 
 // 5. Storage Directory Permissions
 $storagePaths = [
-    'storage/logs'    => __DIR__ . '/storage/logs',
-    'storage/uploads' => __DIR__ . '/storage/uploads'
+    'storage/logs'    => BASE_PATH . '/storage/logs',
+    'storage/uploads' => BASE_PATH . '/storage/uploads'
 ];
 
 foreach ($storagePaths as $rel => $abs) {

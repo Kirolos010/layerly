@@ -23,9 +23,10 @@ function init_secure_session(): void {
         $lifetime = 86400 * 7; // 7 days
 
         if (!headers_sent()) {
+            $cookiePath = (defined('BASE_URL') && BASE_URL !== '') ? BASE_URL : '/';
             session_set_cookie_params([
                 'lifetime' => $lifetime,
-                'path'     => '/',
+                'path'     => $cookiePath,
                 'domain'   => '',
                 'secure'   => $isHttps,
                 'httponly' => true,
@@ -246,9 +247,10 @@ function get_current_lang(): string {
     if (!empty($_GET['lang']) && in_array($_GET['lang'], ['ar', 'en'], true)) {
         $_SESSION['lang'] = $_GET['lang'];
         if (!headers_sent()) {
+            $cookiePath = (defined('BASE_URL') && BASE_URL !== '') ? BASE_URL : '/';
             @setcookie('design_studio_lang', $_GET['lang'], [
                 'expires' => time() + (365 * 86400),
-                'path' => '/',
+                'path' => $cookiePath,
                 'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
                 'httponly' => false,
                 'samesite' => 'Lax'

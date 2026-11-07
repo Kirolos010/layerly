@@ -3,7 +3,7 @@ if (!defined('APP_INIT')) define('APP_INIT', true);
 require_once __DIR__ . '/../config.php';
 $_GET['secret'] = defined('DIAGNOSTICS_SECRET') ? DIAGNOSTICS_SECRET : '';
 ob_start();
-include __DIR__ . '/../diagnostics.php';
+include __DIR__ . '/../admin/diagnostics.php';
 $html = ob_get_clean();
 
 if (strpos($html, 'System Diagnostics') !== false && strpos($html, 'Passed') !== false) {

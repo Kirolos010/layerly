@@ -4,24 +4,19 @@
  */
 
 define('APP_INIT', true);
-
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 send_security_headers();
 init_secure_session();
 
 // Protected page: require login
 if (!is_logged_in()) {
-    $_SESSION['login_redirect'] = 'profile.php';
-    header('Location: login.php');
-    exit;
+    redirect('login?next=' . urlencode('profile'));
 }
 
 $currentUser = get_auth_user();
 if (!$currentUser) {
-    header('Location: login.php');
-    exit;
+    redirect('login');
 }
 
 $csrfToken = get_csrf_token();
@@ -98,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="<?= e($currentLang) ?>" dir="<?= e($dir) ?>" data-theme="dark">
 <head>
+    <base href="<?= e(url('/')) ?>/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e(t('profile')) ?> - <?= e(t('app_name')) ?></title>
@@ -122,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="<?= e(asset('assets/css/style.css')) ?>">
 </head>
 <body>
     <!-- Background Animated Mesh Gradient Orbs -->
@@ -136,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
         <header class="app-header">
             <div>
-                <a href="index.php" style="text-decoration: none;">
+                <a href="<?= e(url('/')) ?>" style="text-decoration: none;">
                     <h1 class="app-title"><?= e(t('app_name')) ?></h1>
                 </a>
                 <p class="app-subtitle"><?= e(t('profile')) ?></p>
@@ -146,10 +142,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="theme-icon">☀️</span> <span class="theme-text"><?= e(t('theme_light')) ?></span>
                 </button>
                 <a href="?lang=<?= $isArabic ? 'en' : 'ar' ?>" class="btn-sm">🌐 <?= e(t('switch_language')) ?></a>
-                <a href="projects.php" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
-                <a href="history.php" class="btn-sm">📜 <?= e(t('history')) ?></a>
-                <a href="index.php" class="btn-sm"><?= e(t('back_to_studio')) ?></a>
-                <a href="logout.php" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
+                <a href="<?= e(url('projects')) ?>" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
+                <a href="<?= e(url('history')) ?>" class="btn-sm">📜 <?= e(t('history')) ?></a>
+                <a href="<?= e(url('/')) ?>" class="btn-sm"><?= e(t('back_to_studio')) ?></a>
+                <a href="<?= e(url('logout')) ?>" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
             </div>
         </header>
 
@@ -173,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
                 <!-- Profile Info Form -->
-                <form method="POST" action="profile.php" style="margin-bottom: 2rem;">
+                <form method="POST" action="<?= e(url('profile')) ?>" style="margin-bottom: 2rem;">
                     <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                     <input type="hidden" name="action" value="update_profile">
 
@@ -205,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </form>
 
                 <!-- Change Password Form -->
-                <form method="POST" action="profile.php" style="padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                <form method="POST" action="<?= e(url('profile')) ?>" style="padding-top: 1.5rem; border-top: 1px solid var(--border);">
                     <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                     <input type="hidden" name="action" value="change_password">
 

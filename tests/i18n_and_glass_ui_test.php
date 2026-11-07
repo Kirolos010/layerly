@@ -247,16 +247,16 @@ run_test("Liquid Glass CSS tokens, theme variables & RTL properties", function()
 run_test("Page consistency: theme script, mesh backdrop & theme toggle", function() {
     $pages = [
         'index.php',
-        'projects.php',
-        'templates.php',
-        'about.php',
-        '404.php',
-        'history.php',
-        'login.php',
-        'register.php',
-        'profile.php',
-        'forgot-password.php',
-        'reset-password.php'
+        'account/projects.php',
+        'pages/templates.php',
+        'pages/about.php',
+        'pages/404.php',
+        'account/history.php',
+        'auth/login.php',
+        'auth/register.php',
+        'account/profile.php',
+        'auth/forgot-password.php',
+        'auth/reset-password.php'
     ];
 
     foreach ($pages as $page) {
@@ -275,7 +275,7 @@ run_test("Page consistency: theme script, mesh backdrop & theme toggle", functio
         if (strpos($content, 'glass-mesh-backdrop') === false) {
             return "Page {$page} is missing .glass-mesh-backdrop container";
         }
-        if ($page !== '404.php' && strpos($content, 'theme-toggle') === false) {
+        if (!str_ends_with($page, '404.php') && strpos($content, 'theme-toggle') === false) {
             return "Page {$page} is missing theme-toggle button";
         }
     }
@@ -285,7 +285,7 @@ run_test("Page consistency: theme script, mesh backdrop & theme toggle", functio
 
 // TEST 8: about.php content & structure
 run_test("about.php structure and feature cards", function() {
-    $aboutPath = __DIR__ . '/../about.php';
+    $aboutPath = __DIR__ . '/../pages/about.php';
     $content = file_get_contents($aboutPath);
 
     $expectedSnippets = [
@@ -309,7 +309,7 @@ run_test("about.php structure and feature cards", function() {
 
 // TEST 9: 404.php content & HTTP status code
 run_test("404.php structure and 404 status header", function() {
-    $notFoundPath = __DIR__ . '/../404.php';
+    $notFoundPath = __DIR__ . '/../pages/404.php';
     $content = file_get_contents($notFoundPath);
 
     if (strpos($content, 'http_response_code(404)') === false) {

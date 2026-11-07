@@ -15,11 +15,72 @@ Options +FollowSymLinks
     </IfModule>
 </FilesMatch>
 
-# Block access to internal directories via rewrite rules
+# Block access to internal directories
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Deny dotfiles except .well-known
     RewriteRule (^|/)\.(?!well-known) - [F]
-    RewriteRule ^(includes|storage|lang|database|tests)(/|$) - [F,L]
+
+    # Deny direct access to internal server directories
+    RewriteRule ^(includes|storage|database|tests|tools|docs|starter-templates|lang)(/|$) - [F,L]
+
+    # Block direct access to config.php
+    RewriteRule ^config\.php$ - [F,L]
+
+    # -----------------------------------------------------------------------------
+    # 301 Redirects: Old root .php filenames to modern clean URLs
+    # -----------------------------------------------------------------------------
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*login\.php[\s?] [NC]
+    RewriteRule ^login\.php$ login [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*register\.php[\s?] [NC]
+    RewriteRule ^register\.php$ register [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*logout\.php[\s?] [NC]
+    RewriteRule ^logout\.php$ logout [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*forgot-password\.php[\s?] [NC]
+    RewriteRule ^forgot-password\.php$ forgot-password [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*reset-password\.php[\s?] [NC]
+    RewriteRule ^reset-password\.php$ reset-password [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*profile\.php[\s?] [NC]
+    RewriteRule ^profile\.php$ profile [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*projects\.php[\s?] [NC]
+    RewriteRule ^projects\.php$ projects [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*history\.php[\s?] [NC]
+    RewriteRule ^history\.php$ history [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*templates\.php[\s?] [NC]
+    RewriteRule ^templates\.php$ templates [R=301,L]
+
+    RewriteCond %{THE_REQUEST} \s/+(?:[^\s/]+/)*about\.php[\s?] [NC]
+    RewriteRule ^about\.php$ about [R=301,L]
+
+    # -----------------------------------------------------------------------------
+    # Clean URLs: Map friendly URLs to organized folder structure
+    # -----------------------------------------------------------------------------
+    RewriteRule ^login/?$ auth/login.php [L,QSA]
+    RewriteRule ^register/?$ auth/register.php [L,QSA]
+    RewriteRule ^logout/?$ auth/logout.php [L,QSA]
+    RewriteRule ^forgot-password/?$ auth/forgot-password.php [L,QSA]
+    RewriteRule ^reset-password/?$ auth/reset-password.php [L,QSA]
+
+    RewriteRule ^profile/?$ account/profile.php [L,QSA]
+    RewriteRule ^projects/?$ account/projects.php [L,QSA]
+    RewriteRule ^history/?$ account/history.php [L,QSA]
+
+    RewriteRule ^templates/?$ pages/templates.php [L,QSA]
+    RewriteRule ^about/?$ pages/about.php [L,QSA]
+
+    # Admin routes
+    RewriteRule ^admin/?$ admin/diagnostics.php [L,QSA]
+    RewriteRule ^admin/install/?$ admin/install.php [L,QSA]
+    RewriteRule ^admin/diagnostics/?$ admin/diagnostics.php [L,QSA]
 </IfModule>
 
 # Security Headers (mod_headers fallback)

@@ -14,7 +14,7 @@ require_once dirname(__DIR__) . '/includes/sanitizer.php';
 send_security_headers();
 
 $action = trim((string)($_GET['action'] ?? 'list'));
-$templatesDir = dirname(__DIR__) . '/templates';
+$templatesDir = dirname(__DIR__) . '/starter-templates';
 
 if ($action === 'list') {
     $files = glob($templatesDir . '/*.json') ?: [];

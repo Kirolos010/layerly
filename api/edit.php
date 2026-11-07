@@ -12,7 +12,7 @@ require_once dirname(__DIR__) . '/includes/security.php';
 require_once dirname(__DIR__) . '/includes/rate-limiter.php';
 require_once dirname(__DIR__) . '/includes/ai-client.php';
 require_once dirname(__DIR__) . '/includes/sanitizer.php';
-require_once dirname(__DIR__) . '/includes/history.php';
+require_once dirname(__DIR__) . '/includes/HistoryRepository.php';
 
 // Security headers
 send_security_headers();

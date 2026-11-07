@@ -53,3 +53,4 @@ if ($allPassed) {
     echo " ⚠️ SOME TESTS FAILED. Check logs above.\n";
     exit(1);
 }
+

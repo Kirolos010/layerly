@@ -20,7 +20,7 @@ define('APP_INIT', true);
 require_once dirname(__DIR__) . '/includes/security.php';
 require_once dirname(__DIR__) . '/includes/db.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
-require_once dirname(__DIR__) . '/includes/history.php';
+require_once dirname(__DIR__) . '/includes/HistoryRepository.php';
 require_once dirname(__DIR__) . '/includes/ai-client.php';
 
 $totalTests = 0;

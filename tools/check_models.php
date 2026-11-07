@@ -46,3 +46,4 @@ if (isset($data['models'])) {
 } else {
     echo "Response:\n" . substr((string)$res, 0, 1000) . "\n";
 }
+

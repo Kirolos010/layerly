@@ -14,7 +14,7 @@ define('APP_INIT', true);
 
 require_once dirname(__DIR__) . '/includes/security.php';
 require_once dirname(__DIR__) . '/includes/auth.php';
-require_once dirname(__DIR__) . '/includes/history.php';
+require_once dirname(__DIR__) . '/includes/HistoryRepository.php';
 
 // Security headers
 send_security_headers();

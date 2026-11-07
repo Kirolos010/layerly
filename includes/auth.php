@@ -38,9 +38,10 @@ function get_or_create_guest_token(): string {
     $_SESSION['guest_token'] = $token;
 
     if (!headers_sent()) {
+        $cookiePath = (defined('BASE_URL') && BASE_URL !== '') ? BASE_URL : '/';
         setcookie('guest_token', $token, [
             'expires'  => time() + (86400 * 365), // 1 year
-            'path'     => '/',
+            'path'     => $cookiePath,
             'domain'   => '',
             'secure'   => is_https_connection(),
             'httponly' => true,
@@ -338,10 +339,8 @@ function request_password_reset(string $email): array {
         ", [$user['id'], $tokenHash]);
 
         // Build reset URL
-        $protocol = is_https_connection() ? 'https://' : 'http://';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $baseDir = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\');
-        $resetUrl = "{$protocol}{$host}{$baseDir}/reset-password.php?token={$rawToken}";
+        $baseUrl = defined('FULL_BASE_URL') ? FULL_BASE_URL : ((is_https_connection() ? 'https://' : 'http://') . ($_SERVER['HTTP_HOST'] ?? 'localhost') . rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/\\'));
+        $resetUrl = "{$baseUrl}/reset-password?token={$rawToken}";
 
         $subject = t('reset_email_subject');
         $body = "Hello {$user['name']},\n\n"

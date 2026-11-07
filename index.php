@@ -6,8 +6,7 @@
 
 define('APP_INIT', true);
 
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/bootstrap.php';
 
 // Send security headers & initialize session
 send_security_headers();
@@ -18,7 +17,7 @@ $currentLang = get_current_lang();
 $isArabic = ($currentLang === 'ar');
 $dir = $isArabic ? 'rtl' : 'ltr';
 $otherLang = $isArabic ? 'en' : 'ar';
-$switchLangUrl = '?lang=' . $otherLang;
+$switchLangUrl = url('?lang=' . $otherLang);
 
 $isLoggedIn = is_logged_in();
 $currentUser = get_auth_user();
@@ -37,6 +36,7 @@ $loadGenerationId = isset($_GET['load_generation']) ? (int)$_GET['load_generatio
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="<?= e(url('/')) ?>/">
     <meta name="csrf-token" content="<?= e($csrfToken) ?>">
     
     <!-- SEO & Metadata -->
@@ -54,9 +54,9 @@ $loadGenerationId = isset($_GET['load_generation']) ? (int)$_GET['load_generatio
     <meta property="og:site_name" content="AI Design Studio">
 
     <!-- Multilingual Alternate hreflang -->
-    <link rel="alternate" hreflang="ar" href="index.php?lang=ar">
-    <link rel="alternate" hreflang="en" href="index.php?lang=en">
-    <link rel="alternate" hreflang="x-default" href="index.php">
+    <link rel="alternate" hreflang="ar" href="<?= e(url('?lang=ar')) ?>">
+    <link rel="alternate" hreflang="en" href="<?= e(url('?lang=en')) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= e(url('/')) ?>">
 
     <!-- Zero-Flash Theme Auto-Initializer -->
     <script>
@@ -117,7 +117,7 @@ $loadGenerationId = isset($_GET['load_generation']) ? (int)$_GET['load_generatio
             <div class="app-brand-group">
                 <div class="app-logo-badge">🎨</div>
                 <div>
-                    <a href="index.php" style="text-decoration: none;">
+                    <a href="<?= e(url('/')) ?>" style="text-decoration: none;">
                         <h1 class="app-title"><?= e(t('app_name')) ?></h1>
                     </a>
                     <p class="app-subtitle"><?= e(t('app_tagline')) ?></p>
@@ -128,21 +128,21 @@ $loadGenerationId = isset($_GET['load_generation']) ? (int)$_GET['load_generatio
                     <span class="theme-icon">☀️</span> <span class="theme-text"><?= e(t('theme_light')) ?></span>
                 </button>
                 <a href="<?= e($switchLangUrl) ?>" class="btn-sm" title="<?= e(t('switch_language')) ?>">🌐 <?= e(t('switch_language')) ?></a>
-                <a href="templates.php" class="btn-sm">🎨 <?= e(t('templates')) ?></a>
-                <a href="projects.php" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
-                <a href="history.php" class="btn-sm">📜 <?= e(t('history')) ?></a>
-                <a href="about.php" class="btn-sm">ℹ️ <?= e(t('about')) ?></a>
+                <a href="<?= e(url('templates')) ?>" class="btn-sm">🎨 <?= e(t('templates')) ?></a>
+                <a href="<?= e(url('projects')) ?>" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
+                <a href="<?= e(url('history')) ?>" class="btn-sm">📜 <?= e(t('history')) ?></a>
+                <a href="<?= e(url('about')) ?>" class="btn-sm">ℹ️ <?= e(t('about')) ?></a>
                 <button type="button" class="btn-sm" id="btn-open-shortcuts" title="<?= e(t('shortcuts_title')) ?>">⌨️</button>
                 
                 <?php if ($isLoggedIn): ?>
-                    <a href="profile.php" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
-                    <a href="logout.php" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
+                    <a href="<?= e(url('profile')) ?>" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
+                    <a href="<?= e(url('logout')) ?>" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
                 <?php else: ?>
-                    <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
-                    <a href="register.php" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
+                    <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
+                    <a href="<?= e(url('register')) ?>" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
                 <?php endif; ?>
 
-                <a href="diagnostics.php?secret=<?= defined('DIAGNOSTICS_SECRET') ? urlencode(DIAGNOSTICS_SECRET) : '' ?>" class="btn-sm" title="Diagnostics">🛠️</a>
+                <a href="<?= e(url('admin/diagnostics.php' . (defined('DIAGNOSTICS_SECRET') ? '?secret=' . urlencode(DIAGNOSTICS_SECRET) : ''))) ?>" class="btn-sm" title="Diagnostics">🛠️</a>
             </div>
         </header>
 
@@ -174,8 +174,8 @@ $loadGenerationId = isset($_GET['load_generation']) ? (int)$_GET['load_generatio
                     </span>
                 </div>
                 <div class="guest-banner-actions">
-                    <a href="register.php" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
-                    <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
+                    <a href="<?= e(url('register')) ?>" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
+                    <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
                 </div>
             </div>
         <?php endif; ?>

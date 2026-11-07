@@ -4,17 +4,14 @@
  */
 
 define('APP_INIT', true);
-
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 send_security_headers();
 init_secure_session();
 
 // If already logged in, redirect to home
 if (is_logged_in()) {
-    header('Location: index.php');
-    exit;
+    redirect('/');
 }
 
 $csrfToken = get_csrf_token();
@@ -83,8 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     login_user($newUser, true);
 
                     $_SESSION['flash_success'] = t('account_created_success');
-                    header('Location: index.php');
-                    exit;
+                    redirect('/');
                 }
             } catch (\Throwable $e) {
                 app_log("Registration error: " . $e->getMessage(), 'ERROR', 'auth.log');
@@ -97,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="<?= e($currentLang) ?>" dir="<?= e($dir) ?>" data-theme="dark">
 <head>
+    <base href="<?= e(url('/')) ?>/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e(t('register')) ?> - <?= e(t('app_name')) ?></title>
@@ -121,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="<?= e(asset('assets/css/style.css')) ?>">
 </head>
 <body>
     <!-- Background Animated Mesh Gradient Orbs -->
@@ -135,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
         <header class="app-header">
             <div>
-                <a href="index.php" style="text-decoration: none;">
+                <a href="<?= e(url('/')) ?>" style="text-decoration: none;">
                     <h1 class="app-title"><?= e(t('app_name')) ?></h1>
                 </a>
             </div>
@@ -144,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span class="theme-icon">☀️</span> <span class="theme-text"><?= e(t('theme_light')) ?></span>
                 </button>
                 <a href="?lang=<?= $isArabic ? 'en' : 'ar' ?>" class="btn-sm">🌐 <?= e(t('switch_language')) ?></a>
-                <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
+                <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
             </div>
         </header>
 
@@ -167,23 +164,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" action="register.php">
+                <form method="POST" action="<?= e(url('register')) ?>">
                     <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
 
                     <div class="form-group">
                         <label for="name"><?= e(t('name')) ?></label>
-                        <input type="text" id="name" name="name" value="<?= e($name) ?>" required autofocus>
+                        <input type="text" id="name" name="name" value="<?= e($name) ?>" required autofocus autocomplete="name">
                     </div>
 
                     <div class="form-group">
                         <label for="email"><?= e(t('email')) ?></label>
-                        <input type="email" id="email" name="email" value="<?= e($email) ?>" required>
+                        <input type="email" id="email" name="email" value="<?= e($email) ?>" required autocomplete="email">
                     </div>
 
                     <div class="form-group">
                         <label for="password"><?= e(t('password')) ?></label>
                         <input type="password" id="password" name="password" required autocomplete="new-password">
-                        <small style="color: var(--text-muted); font-size: 0.78rem;"><?= e(t('password_requires_letter_and_number')) ?></small>
+                        <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                            <?= e(t('password_help')) ?>
+                        </small>
                     </div>
 
                     <div class="form-group">
@@ -192,10 +191,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <div class="form-group">
-                        <label for="preferred_lang"><?= e(t('preferred_lang')) ?></label>
-                        <select id="preferred_lang" name="preferred_lang">
-                            <option value="ar" <?= $prefLang === 'ar' ? 'selected' : '' ?>><?= e(t('arabic')) ?></option>
-                            <option value="en" <?= $prefLang === 'en' ? 'selected' : '' ?>><?= e(t('english')) ?></option>
+                        <label for="preferred_lang"><?= e(t('preferred_language')) ?></label>
+                        <select id="preferred_lang" name="preferred_lang" class="form-control" style="width: 100%; padding: 0.65rem 0.75rem; background: var(--glass-input-bg); color: var(--text); border: 1px solid var(--glass-border); border-radius: 8px;">
+                            <option value="ar" <?= $prefLang === 'ar' ? 'selected' : '' ?>>العربية (Arabic)</option>
+                            <option value="en" <?= $prefLang === 'en' ? 'selected' : '' ?>>English</option>
                         </select>
                     </div>
 
@@ -206,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="auth-footer">
                     <?= e(t('already_have_account')) ?>
-                    <a href="login.php"><?= e(t('login')) ?></a>
+                    <a href="<?= e(url('login')) ?>"><?= e(t('login')) ?></a>
                 </div>
             </div>
         </div>
@@ -219,4 +218,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 </body>
 </html>
-

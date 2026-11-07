@@ -4,9 +4,7 @@
  */
 
 define('APP_INIT', true);
-
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 send_security_headers();
 init_secure_session();
@@ -44,8 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $res = complete_password_reset($token, $newPassword);
         if ($res['success']) {
             $_SESSION['flash_success'] = t('password_reset_success');
-            header('Location: login.php');
-            exit;
+            redirect('login');
         } else {
             $error = $res['error'];
         }
@@ -55,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="<?= e($currentLang) ?>" dir="<?= e($dir) ?>" data-theme="dark">
 <head>
+    <base href="<?= e(url('/')) ?>/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e(t('reset_password_title')) ?> - <?= e(t('app_name')) ?></title>
@@ -79,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="<?= e(asset('assets/css/style.css')) ?>">
 </head>
 <body>
     <!-- Background Animated Mesh Gradient Orbs -->
@@ -93,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
         <header class="app-header">
             <div>
-                <a href="index.php" style="text-decoration: none;">
+                <a href="<?= e(url('/')) ?>" style="text-decoration: none;">
                     <h1 class="app-title"><?= e(t('app_name')) ?></h1>
                 </a>
             </div>
@@ -101,8 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="button" class="btn-sm theme-toggle-btn" id="theme-toggle" title="<?= e(t('theme_toggle')) ?>">
                     <span class="theme-icon">☀️</span> <span class="theme-text"><?= e(t('theme_light')) ?></span>
                 </button>
-                <a href="?token=<?= urlencode($token) ?>&lang=<?= $isArabic ? 'en' : 'ar' ?>" class="btn-sm">🌐 <?= e(t('switch_language')) ?></a>
-                <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
+                <a href="?lang=<?= $isArabic ? 'en' : 'ar' ?>" class="btn-sm">🌐 <?= e(t('switch_language')) ?></a>
+                <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
             </div>
         </header>
 
@@ -110,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="auth-card">
                 <div class="auth-header">
                     <h2><?= e(t('reset_password_title')) ?></h2>
-                    <p><?= e(t('choose_new_password')) ?></p>
+                    <p><?= e(t('reset_password_desc')) ?></p>
                 </div>
 
                 <?php if ($error): ?>
@@ -120,14 +118,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
                 <?php if ($tokenValid): ?>
-                    <form method="POST" action="reset-password.php">
+                    <form method="POST" action="<?= e(url('reset-password')) ?>">
                         <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                         <input type="hidden" name="token" value="<?= e($token) ?>">
 
                         <div class="form-group">
                             <label for="password"><?= e(t('new_password')) ?></label>
                             <input type="password" id="password" name="password" required autofocus autocomplete="new-password">
-                            <small style="color: var(--text-muted); font-size: 0.78rem;"><?= e(t('password_requires_letter_and_number')) ?></small>
+                            <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+                                <?= e(t('password_help')) ?>
+                            </small>
                         </div>
 
                         <div class="form-group">
@@ -136,19 +136,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                            <?= e(t('reset_password_btn')) ?>
+                            <?= e(t('set_new_password')) ?>
                         </button>
                     </form>
                 <?php else: ?>
-                    <div style="text-align: center; margin-top: 1.5rem;">
-                        <a href="forgot-password.php" class="btn btn-primary">
-                            <?= e(t('send_reset_link')) ?> &rarr;
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <a href="<?= e(url('forgot-password')) ?>" class="btn btn-primary" style="display: inline-block;">
+                            <?= e(t('request_new_link')) ?>
                         </a>
                     </div>
                 <?php endif; ?>
 
                 <div class="auth-footer">
-                    <a href="login.php"><?= e(t('remember_password')) ?> <?= e(t('login')) ?></a>
+                    <a href="<?= e(url('login')) ?>">&larr; <?= e(t('back_to_login')) ?></a>
                 </div>
             </div>
         </div>
@@ -161,4 +161,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 </body>
 </html>
-

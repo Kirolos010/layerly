@@ -37,3 +37,4 @@ python tests/hybrid_browser_test.py
 python tests/poster_browser_test.py
 ```
 *(Requires a local web server running at `http://localhost/ai-design-studio` or `http://localhost:8000`)*
+

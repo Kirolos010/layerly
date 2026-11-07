@@ -69,3 +69,4 @@ if (in_array('--format', $argv ?? [], true)) {
 }
 
 exit($hasMismatch ? 1 : 0);
+

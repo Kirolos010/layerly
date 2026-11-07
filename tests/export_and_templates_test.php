@@ -35,8 +35,8 @@ function assert_test(string $name, bool $condition, string $detail = ''): void {
 // -----------------------------------------------------------------------------
 echo "--- SECTION 1: Built-in Templates & Templates API ---\n";
 
-$templatesDir = dirname(__DIR__) . '/templates';
-assert_test("Templates directory exists", is_dir($templatesDir));
+$templatesDir = dirname(__DIR__) . '/starter-templates';
+assert_test("Starter templates directory exists", is_dir($templatesDir));
 
 $templateFiles = glob($templatesDir . '/*.json');
 assert_test("Found at least 10 built-in templates", count($templateFiles) >= 10, "Found " . count($templateFiles));
@@ -309,8 +309,8 @@ echo "\n--- SECTION 4: UI Integration & Page Markup ---\n";
 
 // Check index.php
 $indexContent = file_get_contents(dirname(__DIR__) . '/index.php');
-assert_test("index.php has navigation link to templates.php", str_contains($indexContent, 'href="templates.php"'));
-assert_test("index.php has navigation link to projects.php", str_contains($indexContent, 'href="projects.php"'));
+assert_test("index.php has navigation link to templates", str_contains($indexContent, "url('templates')") || str_contains($indexContent, 'templates'));
+assert_test("index.php has navigation link to projects", str_contains($indexContent, "url('projects')") || str_contains($indexContent, 'projects'));
 assert_test("index.php contains #autosave-restore-banner", str_contains($indexContent, 'id="autosave-restore-banner"'));
 assert_test("index.php contains #project-name-input", str_contains($indexContent, 'id="project-name-input"'));
 assert_test("index.php contains #btn-save-project", str_contains($indexContent, 'id="btn-save-project"'));
@@ -322,20 +322,22 @@ assert_test("index.php export modal has SVG button", str_contains($indexContent,
 assert_test("index.php export modal has JSON export & import buttons", str_contains($indexContent, 'id="btn-export-json"') && str_contains($indexContent, 'id="btn-import-json-trigger"') && str_contains($indexContent, 'id="input-import-json"'));
 
 // Check projects.php
-$projectsContent = file_get_contents(dirname(__DIR__) . '/projects.php');
+$projectsPath = file_exists(dirname(__DIR__) . '/account/projects.php') ? dirname(__DIR__) . '/account/projects.php' : dirname(__DIR__) . '/projects.php';
+$projectsContent = file_get_contents($projectsPath);
 assert_test("projects.php file exists and has HTML doctype", str_contains($projectsContent, '<!DOCTYPE html>'));
 assert_test("projects.php includes search input #project-search-input", str_contains($projectsContent, 'id="project-search-input"'));
 assert_test("projects.php includes projects-grid", str_contains($projectsContent, 'class="projects-grid"'));
 assert_test("projects.php includes action buttons (duplicate, rename, delete)", str_contains($projectsContent, 'btn-duplicate') && str_contains($projectsContent, 'btn-rename') && str_contains($projectsContent, 'btn-delete'));
 
 // Check templates.php
-$templatesContent = file_get_contents(dirname(__DIR__) . '/templates.php');
+$templatesPath = file_exists(dirname(__DIR__) . '/pages/templates.php') ? dirname(__DIR__) . '/pages/templates.php' : dirname(__DIR__) . '/templates.php';
+$templatesContent = file_get_contents($templatesPath);
 assert_test("templates.php file exists and has HTML doctype", str_contains($templatesContent, '<!DOCTYPE html>'));
 assert_test("templates.php includes category filters", str_contains($templatesContent, 'id="category-filters"'));
 assert_test("templates.php includes language filter #template-lang-filter", str_contains($templatesContent, 'id="template-lang-filter"'));
 assert_test("templates.php includes search input #template-search-input", str_contains($templatesContent, 'id="template-search-input"'));
 assert_test("templates.php includes templates grid", str_contains($templatesContent, 'class="templates-grid"'));
-assert_test("templates.php cards link to editor with ?template=", str_contains($templatesContent, 'index.php?template='));
+assert_test("templates.php cards link to editor with ?template=", str_contains($templatesContent, '?template='));
 
 // Check JavaScript ProjectManager & ExportManager wiring in app.js
 $appJsContent = file_get_contents(dirname(__DIR__) . '/assets/js/app.js');

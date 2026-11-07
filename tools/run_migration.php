@@ -33,3 +33,4 @@ foreach ($migrationFiles as $file) {
     }
 }
 echo "Migration process finished.\n";
+

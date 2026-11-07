@@ -8,8 +8,7 @@
 
 define('APP_INIT', true);
 
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 send_security_headers();
 init_secure_session();
@@ -19,13 +18,13 @@ $currentLang = get_current_lang();
 $isArabic = ($currentLang === 'ar');
 $dir = $isArabic ? 'rtl' : 'ltr';
 $otherLang = $isArabic ? 'en' : 'ar';
-$switchLangUrl = '?lang=' . $otherLang;
+$switchLangUrl = url('templates?lang=' . $otherLang);
 
 $isLoggedIn = is_logged_in();
 $currentUser = get_auth_user();
 
 // Load templates from disk
-$templatesDir = __DIR__ . '/templates';
+$templatesDir = BASE_PATH . '/starter-templates';
 $files = glob($templatesDir . '/*.json') ?: [];
 $templates = [];
 
@@ -55,6 +54,7 @@ foreach ($files as $file) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="<?= e(url('/')) ?>/">
     
     <!-- SEO & Metadata -->
     <title><?= e(t('templates')) ?> - <?= e(t('app_name')) ?></title>
@@ -68,9 +68,9 @@ foreach ($files as $file) {
     <meta property="og:site_name" content="AI Design Studio">
 
     <!-- Multilingual Alternate hreflang -->
-    <link rel="alternate" hreflang="ar" href="templates.php?lang=ar">
-    <link rel="alternate" hreflang="en" href="templates.php?lang=en">
-    <link rel="alternate" hreflang="x-default" href="templates.php">
+    <link rel="alternate" hreflang="ar" href="<?= e(url('templates?lang=ar')) ?>">
+    <link rel="alternate" hreflang="en" href="<?= e(url('templates?lang=en')) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= e(url('templates')) ?>">
 
     <!-- Zero-Flash Theme Auto-Initializer -->
     <script>
@@ -110,7 +110,7 @@ foreach ($files as $file) {
             <div class="app-brand-group">
                 <div class="app-logo-badge">🎨</div>
                 <div>
-                    <a href="index.php" style="text-decoration: none;">
+                    <a href="<?= e(url('/')) ?>" style="text-decoration: none;">
                         <h1 class="app-title"><?= e(t('app_name')) ?></h1>
                     </a>
                     <p class="app-subtitle"><?= e(t('templates_gallery_subtitle')) ?> (<?= count($templates) ?>)</p>
@@ -121,19 +121,19 @@ foreach ($files as $file) {
                     <span class="theme-icon">☀️</span> <span class="theme-text"><?= e(t('theme_light')) ?></span>
                 </button>
                 <a href="<?= e($switchLangUrl) ?>" class="btn-sm" title="<?= e(t('switch_language')) ?>">🌐 <?= e(t('switch_language')) ?></a>
-                <a href="projects.php" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
-                <a href="history.php" class="btn-sm">📜 <?= e(t('history')) ?></a>
-                <a href="about.php" class="btn-sm">ℹ️ <?= e(t('about')) ?></a>
+                <a href="<?= e(url('projects')) ?>" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
+                <a href="<?= e(url('history')) ?>" class="btn-sm">📜 <?= e(t('history')) ?></a>
+                <a href="<?= e(url('about')) ?>" class="btn-sm">ℹ️ <?= e(t('about')) ?></a>
                 
                 <?php if ($isLoggedIn): ?>
-                    <a href="profile.php" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
-                    <a href="logout.php" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
+                    <a href="<?= e(url('profile')) ?>" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
+                    <a href="<?= e(url('logout')) ?>" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
                 <?php else: ?>
-                    <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
-                    <a href="register.php" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
+                    <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
+                    <a href="<?= e(url('register')) ?>" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
                 <?php endif; ?>
 
-                <a href="index.php" class="btn btn-sm btn-primary">+ <?= e(t('blank_canvas')) ?></a>
+                <a href="<?= e(url('/')) ?>" class="btn btn-sm btn-primary">+ <?= e(t('blank_canvas')) ?></a>
             </div>
         </header>
 
@@ -191,7 +191,7 @@ foreach ($files as $file) {
                         </div>
 
                         <div class="template-card-overlay">
-                            <a href="index.php?template=<?= urlencode($tpl['id']) ?>" class="btn btn-primary" style="padding: 0.65rem 1.25rem;">
+                            <a href="<?= e(url('?template=' . urlencode($tpl['id']))) ?>" class="btn btn-primary" style="padding: 0.65rem 1.25rem;">
                                 ✨ <?= e(t('use_template')) ?>
                             </a>
                         </div>

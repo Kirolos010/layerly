@@ -7,8 +7,7 @@
 
 define('APP_INIT', true);
 
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 send_security_headers();
 init_secure_session();
@@ -18,7 +17,7 @@ $currentLang = get_current_lang();
 $isArabic = ($currentLang === 'ar');
 $dir = $isArabic ? 'rtl' : 'ltr';
 $otherLang = $isArabic ? 'en' : 'ar';
-$switchLangUrl = '?lang=' . $otherLang;
+$switchLangUrl = url('about?lang=' . $otherLang);
 
 $isLoggedIn = is_logged_in();
 $currentUser = get_auth_user();
@@ -28,6 +27,7 @@ $currentUser = get_auth_user();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="<?= e(url('/')) ?>/">
     <meta name="csrf-token" content="<?= e($csrfToken) ?>">
     
     <!-- SEO & Metadata -->
@@ -42,9 +42,9 @@ $currentUser = get_auth_user();
     <meta property="og:site_name" content="AI Design Studio">
 
     <!-- Multilingual Alternate hreflang -->
-    <link rel="alternate" hreflang="ar" href="about.php?lang=ar">
-    <link rel="alternate" hreflang="en" href="about.php?lang=en">
-    <link rel="alternate" hreflang="x-default" href="about.php">
+    <link rel="alternate" hreflang="ar" href="<?= e(url('about?lang=ar')) ?>">
+    <link rel="alternate" hreflang="en" href="<?= e(url('about?lang=en')) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= e(url('about')) ?>">
 
     <!-- Zero-Flash Theme Auto-Initializer -->
     <script>
@@ -84,7 +84,7 @@ $currentUser = get_auth_user();
             <div class="app-brand-group">
                 <div class="app-logo-badge">✨</div>
                 <div>
-                    <a href="index.php" style="text-decoration: none;">
+                    <a href="<?= e(url('/')) ?>" style="text-decoration: none;">
                         <h1 class="app-title"><?= e(t('app_name')) ?></h1>
                     </a>
                     <p class="app-subtitle"><?= e(t('about')) ?></p>
@@ -95,19 +95,19 @@ $currentUser = get_auth_user();
                     <span class="theme-icon">☀️</span> <span class="theme-text"><?= e(t('theme_light')) ?></span>
                 </button>
                 <a href="<?= e($switchLangUrl) ?>" class="btn-sm" title="<?= e(t('switch_language')) ?>">🌐 <?= e(t('switch_language')) ?></a>
-                <a href="templates.php" class="btn-sm">🎨 <?= e(t('templates')) ?></a>
-                <a href="projects.php" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
-                <a href="history.php" class="btn-sm">📜 <?= e(t('history')) ?></a>
+                <a href="<?= e(url('templates')) ?>" class="btn-sm">🎨 <?= e(t('templates')) ?></a>
+                <a href="<?= e(url('projects')) ?>" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
+                <a href="<?= e(url('history')) ?>" class="btn-sm">📜 <?= e(t('history')) ?></a>
                 
                 <?php if ($isLoggedIn && $currentUser): ?>
-                    <a href="profile.php" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
-                    <a href="logout.php" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
+                    <a href="<?= e(url('profile')) ?>" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
+                    <a href="<?= e(url('logout')) ?>" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
                 <?php else: ?>
-                    <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
-                    <a href="register.php" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
+                    <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
+                    <a href="<?= e(url('register')) ?>" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
                 <?php endif; ?>
 
-                <a href="index.php" class="btn btn-sm btn-primary">+ <?= e(t('new_design')) ?></a>
+                <a href="<?= e(url('/')) ?>" class="btn btn-sm btn-primary">+ <?= e(t('new_design')) ?></a>
             </div>
         </header>
 
@@ -127,10 +127,10 @@ $currentUser = get_auth_user();
                 ?>
             </p>
             <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                <a href="index.php" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-size: 0.95rem;">
+                <a href="<?= e(url('/')) ?>" class="btn btn-primary" style="padding: 0.75rem 1.75rem; font-size: 0.95rem;">
                     🚀 <?= $isArabic ? 'بدء التصميم الآن' : 'Launch Studio Canvas' ?>
                 </a>
-                <a href="templates.php" class="btn btn-secondary" style="padding: 0.75rem 1.75rem; font-size: 0.95rem;">
+                <a href="<?= e(url('templates')) ?>" class="btn btn-secondary" style="padding: 0.75rem 1.75rem; font-size: 0.95rem;">
                     🎨 <?= e(t('explore_templates')) ?>
                 </a>
             </div>
@@ -246,7 +246,7 @@ $currentUser = get_auth_user();
                 <span style="font-size: 0.86rem; color: var(--text-muted);">
                     ⌨️ <?= $isArabic ? 'اضغط علامة الاستفهام (?) في المحرر لفتح قائمة اختصارات لوحة المفاتيح' : 'Press (?) in the studio editor anytime to inspect all keyboard shortcuts.' ?>
                 </span>
-                <a href="index.php" class="btn btn-sm btn-secondary"><?= e(t('return_to_studio')) ?></a>
+                <a href="<?= e(url('/')) ?>" class="btn btn-sm btn-secondary"><?= e(t('return_to_studio')) ?></a>
             </div>
         </div>
 

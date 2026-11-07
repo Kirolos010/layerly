@@ -10,8 +10,8 @@
 
 define('APP_INIT', true);
 
-$configFile = __DIR__ . '/config.php';
-$schemaFile = __DIR__ . '/database/schema.sql';
+$configFile = dirname(__DIR__) . '/config.php';
+$schemaFile = dirname(__DIR__) . '/database/schema.sql';
 $isCli = (php_sapi_name() === 'cli');
 
 $stepResults = [];
@@ -341,7 +341,7 @@ if ($isCli) {
             </div>
 
             <div class="actions">
-                <a href="index.php" class="btn btn-primary">Open AI Design Studio &rarr;</a>
+                <a href="../" class="btn btn-primary">Open AI Design Studio &rarr;</a>
                 <a href="diagnostics.php?secret=<?= defined('DIAGNOSTICS_SECRET') ? urlencode(DIAGNOSTICS_SECRET) : '' ?>" class="btn btn-secondary">Run Diagnostics</a>
             </div>
         <?php else: ?>

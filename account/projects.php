@@ -8,9 +8,7 @@
 
 define('APP_INIT', true);
 
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/includes/db.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 send_security_headers();
 init_secure_session();
@@ -20,7 +18,7 @@ $currentLang = get_current_lang();
 $isArabic = ($currentLang === 'ar');
 $dir = $isArabic ? 'rtl' : 'ltr';
 $otherLang = $isArabic ? 'en' : 'ar';
-$switchLangUrl = '?lang=' . $otherLang;
+$switchLangUrl = url('projects?lang=' . $otherLang);
 
 $isLoggedIn = is_logged_in();
 $currentUser = get_auth_user();
@@ -55,6 +53,7 @@ $projectCount = count($projects);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="<?= e(url('/')) ?>/">
     <meta name="csrf-token" content="<?= e($csrfToken) ?>">
     
     <!-- SEO & Metadata -->
@@ -69,9 +68,9 @@ $projectCount = count($projects);
     <meta property="og:site_name" content="AI Design Studio">
 
     <!-- Multilingual Alternate hreflang -->
-    <link rel="alternate" hreflang="ar" href="projects.php?lang=ar">
-    <link rel="alternate" hreflang="en" href="projects.php?lang=en">
-    <link rel="alternate" hreflang="x-default" href="projects.php">
+    <link rel="alternate" hreflang="ar" href="<?= e(url('projects?lang=ar')) ?>">
+    <link rel="alternate" hreflang="en" href="<?= e(url('projects?lang=en')) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= e(url('projects')) ?>">
 
     <!-- Zero-Flash Theme Auto-Initializer -->
     <script>
@@ -111,7 +110,7 @@ $projectCount = count($projects);
             <div class="app-brand-group">
                 <div class="app-logo-badge">📁</div>
                 <div>
-                    <a href="index.php" style="text-decoration: none;">
+                    <a href="<?= e(url('/')) ?>" style="text-decoration: none;">
                         <h1 class="app-title"><?= e(t('app_name')) ?></h1>
                     </a>
                     <p class="app-subtitle"><?= e(t('my_designs')) ?> (<?= $projectCount ?>)</p>
@@ -122,19 +121,19 @@ $projectCount = count($projects);
                     <span class="theme-icon">☀️</span> <span class="theme-text"><?= e(t('theme_light')) ?></span>
                 </button>
                 <a href="<?= e($switchLangUrl) ?>" class="btn-sm" title="<?= e(t('switch_language')) ?>">🌐 <?= e(t('switch_language')) ?></a>
-                <a href="templates.php" class="btn-sm">🎨 <?= e(t('templates')) ?></a>
-                <a href="history.php" class="btn-sm">📜 <?= e(t('history')) ?></a>
-                <a href="about.php" class="btn-sm">ℹ️ <?= e(t('about')) ?></a>
+                <a href="<?= e(url('templates')) ?>" class="btn-sm">🎨 <?= e(t('templates')) ?></a>
+                <a href="<?= e(url('history')) ?>" class="btn-sm">📜 <?= e(t('history')) ?></a>
+                <a href="<?= e(url('about')) ?>" class="btn-sm">ℹ️ <?= e(t('about')) ?></a>
                 
                 <?php if ($isLoggedIn): ?>
-                    <a href="profile.php" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
-                    <a href="logout.php" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
+                    <a href="<?= e(url('profile')) ?>" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
+                    <a href="<?= e(url('logout')) ?>" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
                 <?php else: ?>
-                    <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
-                    <a href="register.php" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
+                    <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
+                    <a href="<?= e(url('register')) ?>" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
                 <?php endif; ?>
 
-                <a href="index.php" class="btn btn-sm btn-primary">+ <?= e(t('new_design')) ?></a>
+                <a href="<?= e(url('/')) ?>" class="btn btn-sm btn-primary">+ <?= e(t('new_design')) ?></a>
             </div>
         </header>
 
@@ -148,8 +147,8 @@ $projectCount = count($projects);
                     </span>
                 </div>
                 <div class="guest-banner-actions">
-                    <a href="register.php" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
-                    <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
+                    <a href="<?= e(url('register')) ?>" class="btn-sm btn-primary"><?= e(t('register')) ?></a>
+                    <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
                 </div>
             </div>
         <?php endif; ?>
@@ -168,7 +167,7 @@ $projectCount = count($projects);
                 <div style="font-size: 3.5rem; margin-bottom: 0.75rem;">📁</div>
                 <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; font-weight: 700;"><?= e(t('no_designs_yet')) ?></h3>
                 <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;"><?= e(t('no_designs_desc')) ?></p>
-                <a href="index.php" class="btn btn-primary" style="display: inline-flex; width: auto;">+ <?= e(t('create_first_design')) ?></a>
+                <a href="<?= e(url('/')) ?>" class="btn btn-primary" style="display: inline-flex; width: auto;">+ <?= e(t('create_first_design')) ?></a>
             </div>
         <?php else: ?>
             <div class="projects-grid" id="projects-grid">
@@ -181,7 +180,7 @@ $projectCount = count($projects);
                                 <div class="project-thumb-placeholder">🎨</div>
                             <?php endif; ?>
                             <div class="project-thumb-overlay">
-                                <a href="index.php?project_id=<?= (int)$proj['id'] ?>" class="btn btn-sm btn-primary">
+                                <a href="<?= e(url('?project_id=' . (int)$proj['id'])) ?>" class="btn btn-sm btn-primary">
                                     <?= e(t('open_editor')) ?>
                                 </a>
                             </div>

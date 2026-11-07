@@ -5,9 +5,7 @@
 
 define('APP_INIT', true);
 
-require_once __DIR__ . '/includes/security.php';
-require_once __DIR__ . '/includes/auth.php';
-require_once __DIR__ . '/includes/history.php';
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 send_security_headers();
 init_secure_session();
@@ -32,8 +30,14 @@ $pagination = $historyData['pagination'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="<?= e(url('/')) ?>/">
     <meta name="csrf-token" content="<?= e($csrfToken) ?>">
     <title><?= e(t('history_title')) ?> - <?= e(t('app_name')) ?></title>
+
+    <!-- Multilingual Alternate hreflang -->
+    <link rel="alternate" hreflang="ar" href="<?= e(url('history?lang=ar')) ?>">
+    <link rel="alternate" hreflang="en" href="<?= e(url('history?lang=en')) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= e(url('history')) ?>">
 
     <!-- Zero-Flash Theme Auto-Initializer -->
     <script>
@@ -70,7 +74,7 @@ $pagination = $historyData['pagination'];
         <!-- Top Navigation Header -->
         <header class="app-header">
             <div>
-                <a href="index.php" style="text-decoration: none;">
+                <a href="<?= e(url('/')) ?>" style="text-decoration: none;">
                     <h1 class="app-title"><?= e(t('app_name')) ?></h1>
                 </a>
                 <p class="app-subtitle"><?= e(t('history_subtitle')) ?></p>
@@ -79,15 +83,15 @@ $pagination = $historyData['pagination'];
                 <button type="button" class="btn-sm theme-toggle-btn" id="theme-toggle" title="<?= e(t('theme_toggle')) ?>">
                     <span class="theme-icon">☀️</span> <span class="theme-text"><?= e(t('theme_light')) ?></span>
                 </button>
-                <a href="?type=<?= urlencode($type) ?>&page=<?= $page ?>&lang=<?= $isArabic ? 'en' : 'ar' ?>" class="btn-sm">🌐 <?= e(t('switch_language')) ?></a>
-                <a href="projects.php" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
-                <a href="index.php" class="btn-sm"><?= e(t('back_to_studio')) ?></a>
+                <a href="<?= e(url('history?type=' . urlencode($type) . '&page=' . $page . '&lang=' . ($isArabic ? 'en' : 'ar'))) ?>" class="btn-sm">🌐 <?= e(t('switch_language')) ?></a>
+                <a href="<?= e(url('projects')) ?>" class="btn-sm">📁 <?= e(t('my_designs')) ?></a>
+                <a href="<?= e(url('/')) ?>" class="btn-sm"><?= e(t('back_to_studio')) ?></a>
                 <?php if ($isLoggedIn): ?>
-                    <a href="profile.php" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
-                    <a href="logout.php" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
+                    <a href="<?= e(url('profile')) ?>" class="user-badge">👤 <?= e($currentUser['name']) ?></a>
+                    <a href="<?= e(url('logout')) ?>" class="btn-sm" style="color: var(--danger);"><?= e(t('logout')) ?></a>
                 <?php else: ?>
-                    <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
-                    <a href="register.php" class="btn-sm btn-primary" style="color:#fff;"><?= e(t('register')) ?></a>
+                    <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
+                    <a href="<?= e(url('register')) ?>" class="btn-sm btn-primary" style="color:#fff;"><?= e(t('register')) ?></a>
                 <?php endif; ?>
             </div>
         </header>
@@ -102,8 +106,8 @@ $pagination = $historyData['pagination'];
                     </span>
                 </div>
                 <div class="guest-banner-actions">
-                    <a href="register.php" class="btn-sm btn-primary" style="color: #fff;"><?= e(t('register')) ?></a>
-                    <a href="login.php" class="btn-sm"><?= e(t('login')) ?></a>
+                    <a href="<?= e(url('register')) ?>" class="btn-sm btn-primary" style="color: #fff;"><?= e(t('register')) ?></a>
+                    <a href="<?= e(url('login')) ?>" class="btn-sm"><?= e(t('login')) ?></a>
                 </div>
             </div>
         <?php endif; ?>
@@ -111,10 +115,10 @@ $pagination = $historyData['pagination'];
         <!-- History Controls & Filters -->
         <div class="history-header">
             <div class="filter-pills">
-                <a href="?type=all" class="filter-pill <?= $type === 'all' ? 'active' : '' ?>"><?= e(t('filter_all')) ?></a>
-                <a href="?type=generate" class="filter-pill <?= $type === 'generate' ? 'active' : '' ?>"><?= e(t('filter_generate')) ?></a>
-                <a href="?type=enhance" class="filter-pill <?= $type === 'enhance' ? 'active' : '' ?>"><?= e(t('filter_enhance')) ?></a>
-                <a href="?type=edit" class="filter-pill <?= $type === 'edit' ? 'active' : '' ?>"><?= e(t('filter_edit')) ?></a>
+                <a href="<?= e(url('history?type=all')) ?>" class="filter-pill <?= $type === 'all' ? 'active' : '' ?>"><?= e(t('filter_all')) ?></a>
+                <a href="<?= e(url('history?type=generate')) ?>" class="filter-pill <?= $type === 'generate' ? 'active' : '' ?>"><?= e(t('filter_generate')) ?></a>
+                <a href="<?= e(url('history?type=enhance')) ?>" class="filter-pill <?= $type === 'enhance' ? 'active' : '' ?>"><?= e(t('filter_enhance')) ?></a>
+                <a href="<?= e(url('history?type=edit')) ?>" class="filter-pill <?= $type === 'edit' ? 'active' : '' ?>"><?= e(t('filter_edit')) ?></a>
             </div>
 
             <?php if (!empty($items)): ?>
@@ -129,7 +133,7 @@ $pagination = $historyData['pagination'];
             <div class="empty-state">
                 <h3><?= e(t('empty_history')) ?></h3>
                 <p style="margin-top: 0.5rem;"><?= e(t('app_tagline')) ?></p>
-                <a href="index.php" class="btn btn-primary" style="margin-top: 1.25rem;">
+                <a href="<?= e(url('/')) ?>" class="btn btn-primary" style="margin-top: 1.25rem;">
                     🚀 <?= e(t('btn_generate')) ?>
                 </a>
             </div>
@@ -153,12 +157,12 @@ $pagination = $historyData['pagination'];
 
                         <div class="card-actions">
                             <?php if ($item['type'] === 'generate' || $item['type'] === 'edit'): ?>
-                                <a href="index.php?load_generation=<?= (int)$item['id'] ?>" class="btn-sm" style="background: var(--primary); color: #fff; border-color: var(--primary);">
+                                <a href="<?= e(url('?load_generation=' . (int)$item['id'])) ?>" class="btn-sm" style="background: var(--primary); color: #fff; border-color: var(--primary);">
                                     🎨 <?= e(t('action_open_editor')) ?>
                                 </a>
                             <?php endif; ?>
 
-                            <a href="index.php?reuse_prompt=<?= urlencode($item['prompt']) ?>" class="btn-sm">
+                            <a href="<?= e(url('?reuse_prompt=' . urlencode($item['prompt']))) ?>" class="btn-sm">
                                 🔄 <?= e(t('action_reuse_prompt')) ?>
                             </a>
 
@@ -178,7 +182,7 @@ $pagination = $historyData['pagination'];
             <?php if ($pagination['total_pages'] > 1): ?>
                 <div class="pagination">
                     <?php if ($pagination['has_prev']): ?>
-                        <a href="?type=<?= urlencode($type) ?>&page=<?= $page - 1 ?>" class="btn-sm"><?= t('page_prev') ?></a>
+                        <a href="<?= e(url('history?type=' . urlencode($type) . '&page=' . ($page - 1))) ?>" class="btn-sm"><?= t('page_prev') ?></a>
                     <?php endif; ?>
 
                     <span style="color: var(--text-muted); font-size: 0.9rem;">
@@ -186,7 +190,7 @@ $pagination = $historyData['pagination'];
                     </span>
 
                     <?php if ($pagination['has_next']): ?>
-                        <a href="?type=<?= urlencode($type) ?>&page=<?= $page + 1 ?>" class="btn-sm"><?= t('page_next') ?></a>
+                        <a href="<?= e(url('history?type=' . urlencode($type) . '&page=' . ($page + 1))) ?>" class="btn-sm"><?= t('page_next') ?></a>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
