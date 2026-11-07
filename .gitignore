@@ -1,0 +1,13 @@
+config.php
+.env
+storage/logs/*
+!storage/logs/.gitkeep
+storage/uploads/*
+!storage/uploads/.gitkeep
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+__pycache__/
+*.pyc

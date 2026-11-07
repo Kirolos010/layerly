@@ -1,0 +1,137 @@
+{
+  "id": "coffee-shop-promo",
+  "name_ar": "إعلان كافيه ومقهى فاخر",
+  "name_en": "Artisan Coffee Promo Post",
+  "category": "social",
+  "language": "en",
+  "tags": ["coffee", "cafe", "promo", "instagram", "warm"],
+  "canvas": {
+    "width": 1080,
+    "height": 1080,
+    "background": "#1c1917"
+  },
+  "objects": [
+    {
+      "type": "rect",
+      "left": 60,
+      "top": 60,
+      "width": 960,
+      "height": 960,
+      "fill": "transparent",
+      "stroke": "#78350f",
+      "strokeWidth": 1.5,
+      "rx": 20,
+      "opacity": 0.5
+    },
+    {
+      "type": "text",
+      "text": "— EST. 2024 —",
+      "left": 290,
+      "top": 140,
+      "width": 500,
+      "fontFamily": "Montserrat",
+      "fontSize": 20,
+      "fontWeight": "600",
+      "fill": "#d97706",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "ARTISAN ROAST",
+      "left": 140,
+      "top": 200,
+      "width": 800,
+      "fontFamily": "Playfair Display",
+      "fontSize": 68,
+      "fontWeight": "bold",
+      "fill": "#fef3c7",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "circle",
+      "left": 440,
+      "top": 350,
+      "width": 200,
+      "height": 200,
+      "fill": "#292524",
+      "stroke": "#d97706",
+      "strokeWidth": 3
+    },
+    {
+      "type": "text",
+      "text": "☕",
+      "left": 490,
+      "top": 400,
+      "width": 100,
+      "fontFamily": "Poppins",
+      "fontSize": 72,
+      "fill": "#f59e0b",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "FRESHLY BREWED EVERY MORNING",
+      "left": 140,
+      "top": 620,
+      "width": 800,
+      "fontFamily": "Montserrat",
+      "fontSize": 24,
+      "fontWeight": "bold",
+      "fill": "#d97706",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "Enjoy 25% off all specialty pour-overs & cold brews this weekend.",
+      "left": 190,
+      "top": 680,
+      "width": 700,
+      "fontFamily": "Poppins",
+      "fontSize": 26,
+      "fontWeight": "normal",
+      "fill": "#e7e5e4",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "rect",
+      "left": 360,
+      "top": 800,
+      "width": 360,
+      "height": 70,
+      "fill": "#d97706",
+      "rx": 35
+    },
+    {
+      "type": "text",
+      "text": "CLAIM YOUR CUP",
+      "left": 380,
+      "top": 820,
+      "width": 320,
+      "fontFamily": "Montserrat",
+      "fontSize": 22,
+      "fontWeight": "700",
+      "fill": "#1c1917",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "742 Evergreen Terrace, Downtown District",
+      "left": 240,
+      "top": 930,
+      "width": 600,
+      "fontFamily": "Poppins",
+      "fontSize": 18,
+      "fontWeight": "normal",
+      "fill": "#a8a29e",
+      "textAlign": "center",
+      "direction": "ltr"
+    }
+  ]
+}
+

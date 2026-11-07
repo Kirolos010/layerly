@@ -1,0 +1,139 @@
+{
+  "id": "summer-sale-story",
+  "name_ar": "ستوري تخفيضات الصيف الكبرى",
+  "name_en": "Arabic Summer Mega Sale Story",
+  "category": "story",
+  "language": "ar",
+  "tags": ["summer", "sale", "fashion", "story", "arabic", "vibrant"],
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "background": "#7c2d12"
+  },
+  "objects": [
+    {
+      "type": "circle",
+      "left": 40,
+      "top": 100,
+      "width": 500,
+      "height": 500,
+      "fill": "#ea580c",
+      "opacity": 0.35
+    },
+    {
+      "type": "circle",
+      "left": 600,
+      "top": 1200,
+      "width": 450,
+      "height": 450,
+      "fill": "#f59e0b",
+      "opacity": 0.25
+    },
+    {
+      "type": "rect",
+      "left": 365,
+      "top": 180,
+      "width": 350,
+      "height": 60,
+      "fill": "#fde047",
+      "rx": 30
+    },
+    {
+      "type": "text",
+      "text": "تخفيضات موسم 2026",
+      "left": 380,
+      "top": 195,
+      "width": 320,
+      "fontFamily": "Cairo",
+      "fontSize": 26,
+      "fontWeight": "800",
+      "fill": "#7c2d12",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "مهرجان\nالصيف",
+      "left": 90,
+      "top": 300,
+      "width": 900,
+      "fontFamily": "Cairo",
+      "fontSize": 128,
+      "fontWeight": "900",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "rect",
+      "left": 240,
+      "top": 720,
+      "width": 600,
+      "height": 160,
+      "fill": "#f97316",
+      "rx": 32
+    },
+    {
+      "type": "text",
+      "text": "خصم يصل إلى 70%",
+      "left": 260,
+      "top": 755,
+      "width": 560,
+      "fontFamily": "Cairo",
+      "fontSize": 62,
+      "fontWeight": "bold",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "على كافة تشكيلات الأزياء الصيفية والأحذية والإكسسوارات الرجالية والنسائية",
+      "left": 140,
+      "top": 980,
+      "width": 800,
+      "fontFamily": "Almarai",
+      "fontSize": 34,
+      "fontWeight": "normal",
+      "fill": "#ffedd5",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "rect",
+      "left": 290,
+      "top": 1450,
+      "width": 500,
+      "height": 90,
+      "fill": "#fde047",
+      "rx": 45
+    },
+    {
+      "type": "text",
+      "text": "تسوق الآن أونلاين ←",
+      "left": 310,
+      "top": 1475,
+      "width": 460,
+      "fontFamily": "Cairo",
+      "fontSize": 32,
+      "fontWeight": "900",
+      "fill": "#7c2d12",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "اسحب الشاشة لأعلى للتسوق",
+      "left": 290,
+      "top": 1600,
+      "width": 500,
+      "fontFamily": "Cairo",
+      "fontSize": 24,
+      "fontWeight": "normal",
+      "fill": "#fed7aa",
+      "textAlign": "center",
+      "direction": "rtl"
+    }
+  ]
+}
+

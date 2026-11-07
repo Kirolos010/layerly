@@ -1,0 +1,130 @@
+{
+  "id": "fitness-workout-story",
+  "name_ar": "ستوري تمارين رياضية وتحفيز",
+  "name_en": "Fitness Challenge Story",
+  "category": "story",
+  "language": "en",
+  "tags": ["fitness", "gym", "workout", "story", "bold"],
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "background": "#09090b"
+  },
+  "objects": [
+    {
+      "type": "rect",
+      "left": 0,
+      "top": 0,
+      "width": 1080,
+      "height": 40,
+      "fill": "#84cc16"
+    },
+    {
+      "type": "text",
+      "text": "DAY 01 / 30",
+      "left": 140,
+      "top": 240,
+      "width": 800,
+      "fontFamily": "Montserrat",
+      "fontSize": 32,
+      "fontWeight": "800",
+      "fill": "#84cc16",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "SUMMER\nSHRED",
+      "left": 100,
+      "top": 320,
+      "width": 880,
+      "fontFamily": "Montserrat",
+      "fontSize": 120,
+      "fontWeight": "900",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "rect",
+      "left": 290,
+      "top": 620,
+      "width": 500,
+      "height": 10,
+      "fill": "#84cc16"
+    },
+    {
+      "type": "text",
+      "text": "TRANSFORM YOUR STRENGTH & MINDSET",
+      "left": 140,
+      "top": 680,
+      "width": 800,
+      "fontFamily": "Montserrat",
+      "fontSize": 28,
+      "fontWeight": "700",
+      "fill": "#a1a1aa",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "rect",
+      "left": 140,
+      "top": 860,
+      "width": 800,
+      "height": 480,
+      "fill": "#18181b",
+      "stroke": "#27272a",
+      "strokeWidth": 2,
+      "rx": 28
+    },
+    {
+      "type": "text",
+      "text": "⚡ 20 MIN HIIT CIRCUIT\n🔥 400 KCAL BURN\n💪 ZERO EQUIPMENT REQUIRED",
+      "left": 180,
+      "top": 980,
+      "width": 720,
+      "fontFamily": "Roboto",
+      "fontSize": 36,
+      "fontWeight": "bold",
+      "fill": "#f4f4f5",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "rect",
+      "left": 240,
+      "top": 1500,
+      "width": 600,
+      "height": 100,
+      "fill": "#84cc16",
+      "rx": 50
+    },
+    {
+      "type": "text",
+      "text": "SWIPE UP TO JOIN FREE",
+      "left": 260,
+      "top": 1530,
+      "width": 560,
+      "fontFamily": "Montserrat",
+      "fontSize": 34,
+      "fontWeight": "900",
+      "fill": "#09090b",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "▲  ▲  ▲",
+      "left": 340,
+      "top": 1640,
+      "width": 400,
+      "fontFamily": "Montserrat",
+      "fontSize": 24,
+      "fontWeight": "bold",
+      "fill": "#84cc16",
+      "textAlign": "center",
+      "direction": "ltr"
+    }
+  ]
+}
+

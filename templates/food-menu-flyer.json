@@ -1,0 +1,122 @@
+{
+  "id": "food-menu-flyer",
+  "name_ar": "فلاير عروض مطعم ومأكولات",
+  "name_en": "Restaurant Daily Offer Flyer",
+  "category": "flyer",
+  "language": "ar",
+  "tags": ["food", "restaurant", "burger", "offer", "arabic"],
+  "canvas": {
+    "width": 1080,
+    "height": 1080,
+    "background": "#431407"
+  },
+  "objects": [
+    {
+      "type": "circle",
+      "left": 390,
+      "top": 120,
+      "width": 300,
+      "height": 300,
+      "fill": "#ea580c",
+      "opacity": 0.2
+    },
+    {
+      "type": "text",
+      "text": "🍔 عرض اليوم الخاص 🍔",
+      "left": 140,
+      "top": 120,
+      "width": 800,
+      "fontFamily": "Cairo",
+      "fontSize": 34,
+      "fontWeight": "bold",
+      "fill": "#f59e0b",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "كومبو البرجر الملكي",
+      "left": 100,
+      "top": 180,
+      "width": 880,
+      "fontFamily": "Cairo",
+      "fontSize": 74,
+      "fontWeight": "800",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "circle",
+      "left": 415,
+      "top": 320,
+      "width": 250,
+      "height": 250,
+      "fill": "#d97706",
+      "stroke": "#fde047",
+      "strokeWidth": 4
+    },
+    {
+      "type": "text",
+      "text": "فقط\n35\nريال",
+      "left": 440,
+      "top": 360,
+      "width": 200,
+      "fontFamily": "Cairo",
+      "fontSize": 42,
+      "fontWeight": "800",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "ساندوتش أنجوس بيف فاخر + بطاطس مقرمشة + صوصات خاصة + مشروب غازي مثلج",
+      "left": 160,
+      "top": 640,
+      "width": 760,
+      "fontFamily": "Tajawal",
+      "fontSize": 30,
+      "fontWeight": "normal",
+      "fill": "#fed7aa",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "rect",
+      "left": 315,
+      "top": 780,
+      "width": 450,
+      "height": 80,
+      "fill": "#ea580c",
+      "rx": 40
+    },
+    {
+      "type": "text",
+      "text": "للطلب الفوري: 920004545 📞",
+      "left": 340,
+      "top": 800,
+      "width": 400,
+      "fontFamily": "Cairo",
+      "fontSize": 26,
+      "fontWeight": "bold",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "العرض ساري حتى نهاية الأسبوع أو حتى نفاد الكمية",
+      "left": 240,
+      "top": 930,
+      "width": 600,
+      "fontFamily": "Tajawal",
+      "fontSize": 20,
+      "fontWeight": "normal",
+      "fill": "#fdba74",
+      "textAlign": "center",
+      "direction": "rtl"
+    }
+  ]
+}
+

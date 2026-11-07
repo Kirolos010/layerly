@@ -1,0 +1,140 @@
+{
+  "id": "luxury-event-invitation",
+  "name_ar": "بطاقة دعوة حفل راقية",
+  "name_en": "Luxury Gala Invitation Card",
+  "category": "invitation",
+  "language": "ar",
+  "tags": ["invitation", "luxury", "wedding", "gold", "arabic"],
+  "canvas": {
+    "width": 1080,
+    "height": 1920,
+    "background": "#064e3b"
+  },
+  "objects": [
+    {
+      "type": "rect",
+      "left": 60,
+      "top": 60,
+      "width": 960,
+      "height": 1800,
+      "fill": "transparent",
+      "stroke": "#fbbf24",
+      "strokeWidth": 2,
+      "rx": 24,
+      "opacity": 0.5
+    },
+    {
+      "type": "rect",
+      "left": 90,
+      "top": 90,
+      "width": 900,
+      "height": 1740,
+      "fill": "transparent",
+      "stroke": "#fbbf24",
+      "strokeWidth": 1,
+      "rx": 16,
+      "opacity": 0.25
+    },
+    {
+      "type": "text",
+      "text": "بسم الله الرحمن الرحيم",
+      "left": 140,
+      "top": 240,
+      "width": 800,
+      "fontFamily": "Amiri",
+      "fontSize": 36,
+      "fontWeight": "bold",
+      "fill": "#fbbf24",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "دعوة خاصة",
+      "left": 140,
+      "top": 360,
+      "width": 800,
+      "fontFamily": "Reem Kufi",
+      "fontSize": 64,
+      "fontWeight": "bold",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "يشرفنا دعوتكم لحضور الأمسية الاحتفالية السنوية وتكريم المتميزين",
+      "left": 140,
+      "top": 540,
+      "width": 800,
+      "fontFamily": "Cairo",
+      "fontSize": 34,
+      "fontWeight": "normal",
+      "fill": "#e2e8f0",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "rect",
+      "left": 390,
+      "top": 720,
+      "width": 300,
+      "height": 2,
+      "fill": "#fbbf24",
+      "opacity": 0.7
+    },
+    {
+      "type": "text",
+      "text": "الموعد والزمان",
+      "left": 140,
+      "top": 820,
+      "width": 800,
+      "fontFamily": "Amiri",
+      "fontSize": 42,
+      "fontWeight": "bold",
+      "fill": "#fbbf24",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "الجمعة 24 نوفمبر 2026\nالساعة 8:00 مساءً",
+      "left": 140,
+      "top": 900,
+      "width": 800,
+      "fontFamily": "Cairo",
+      "fontSize": 38,
+      "fontWeight": "bold",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "المكان: فندق الريتز كارلتون - القاعة الملكية الكبرى",
+      "left": 140,
+      "top": 1100,
+      "width": 800,
+      "fontFamily": "Cairo",
+      "fontSize": 30,
+      "fontWeight": "normal",
+      "fill": "#d1fae5",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "حضوركم يسعدنا ويشرفنا كثيراً",
+      "left": 140,
+      "top": 1400,
+      "width": 800,
+      "fontFamily": "Amiri",
+      "fontSize": 44,
+      "fontWeight": "italic",
+      "fill": "#fbbf24",
+      "textAlign": "center",
+      "direction": "rtl"
+    }
+  ]
+}
+

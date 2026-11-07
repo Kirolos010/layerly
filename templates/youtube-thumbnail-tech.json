@@ -1,0 +1,118 @@
+{
+  "id": "youtube-thumbnail-tech",
+  "name_ar": "صورة مصغرة يوتيوب تقنية",
+  "name_en": "YouTube Tech Video Thumbnail",
+  "category": "banner",
+  "language": "en",
+  "tags": ["youtube", "thumbnail", "tech", "coding", "bold"],
+  "canvas": {
+    "width": 1280,
+    "height": 720,
+    "background": "#180033"
+  },
+  "objects": [
+    {
+      "type": "circle",
+      "left": 900,
+      "top": 50,
+      "width": 450,
+      "height": 450,
+      "fill": "#a855f7",
+      "opacity": 0.25
+    },
+    {
+      "type": "rect",
+      "left": 80,
+      "top": 70,
+      "width": 320,
+      "height": 60,
+      "fill": "#facc15",
+      "rx": 12
+    },
+    {
+      "type": "text",
+      "text": "FULL TUTORIAL 2026",
+      "left": 90,
+      "top": 84,
+      "width": 300,
+      "fontFamily": "Montserrat",
+      "fontSize": 24,
+      "fontWeight": "900",
+      "fill": "#0f172a",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "BUILD APPS\nWITH AI",
+      "left": 80,
+      "top": 160,
+      "width": 780,
+      "fontFamily": "Montserrat",
+      "fontSize": 96,
+      "fontWeight": "900",
+      "fill": "#ffffff",
+      "textAlign": "left",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "Zero Code Experience Required • 100% Free Stack",
+      "left": 80,
+      "top": 400,
+      "width": 750,
+      "fontFamily": "Poppins",
+      "fontSize": 28,
+      "fontWeight": "600",
+      "fill": "#38bdf8",
+      "textAlign": "left",
+      "direction": "ltr"
+    },
+    {
+      "type": "rect",
+      "left": 80,
+      "top": 490,
+      "width": 260,
+      "height": 70,
+      "fill": "#ec4899",
+      "rx": 35
+    },
+    {
+      "type": "text",
+      "text": "WATCH NOW ▶",
+      "left": 100,
+      "top": 510,
+      "width": 220,
+      "fontFamily": "Montserrat",
+      "fontSize": 24,
+      "fontWeight": "bold",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "circle",
+      "left": 950,
+      "top": 200,
+      "width": 240,
+      "height": 240,
+      "fill": "#facc15",
+      "stroke": "#ffffff",
+      "strokeWidth": 6
+    },
+    {
+      "type": "text",
+      "text": "FREE",
+      "left": 970,
+      "top": 280,
+      "width": 200,
+      "fontFamily": "Montserrat",
+      "fontSize": 64,
+      "fontWeight": "900",
+      "fill": "#180033",
+      "textAlign": "center",
+      "direction": "ltr"
+    }
+  ]
+}
+

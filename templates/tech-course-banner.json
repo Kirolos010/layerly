@@ -1,0 +1,110 @@
+{
+  "id": "tech-course-banner",
+  "name_ar": "بانر دورة برمجة وذكاء اصطناعي",
+  "name_en": "AI Bootcamp Landscape Banner",
+  "category": "banner",
+  "language": "ar",
+  "tags": ["tech", "ai", "coding", "course", "banner", "arabic"],
+  "canvas": {
+    "width": 1200,
+    "height": 630,
+    "background": "#0f172a"
+  },
+  "objects": [
+    {
+      "type": "circle",
+      "left": 950,
+      "top": -50,
+      "width": 350,
+      "height": 350,
+      "fill": "#3b82f6",
+      "opacity": 0.12
+    },
+    {
+      "type": "rect",
+      "left": 80,
+      "top": 80,
+      "width": 180,
+      "height": 45,
+      "fill": "rgba(59, 130, 246, 0.2)",
+      "stroke": "#38bdf8",
+      "strokeWidth": 1.5,
+      "rx": 22
+    },
+    {
+      "type": "text",
+      "text": "● تسجيل متاح الآن",
+      "left": 90,
+      "top": 90,
+      "width": 160,
+      "fontFamily": "Cairo",
+      "fontSize": 18,
+      "fontWeight": "600",
+      "fill": "#38bdf8",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "المعسكر المكثف لتطوير الذكاء الاصطناعي",
+      "left": 80,
+      "top": 160,
+      "width": 1040,
+      "fontFamily": "Cairo",
+      "fontSize": 54,
+      "fontWeight": "800",
+      "fill": "#ffffff",
+      "textAlign": "right",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "تعلم بناء تطبيقات ذكية وتدريب النماذج اللغوية الكبيرة مع مشاريع عملية احترافية من الصفر.",
+      "left": 280,
+      "top": 250,
+      "width": 840,
+      "fontFamily": "Tajawal",
+      "fontSize": 26,
+      "fontWeight": "normal",
+      "fill": "#cbd5e1",
+      "textAlign": "right",
+      "direction": "rtl"
+    },
+    {
+      "type": "rect",
+      "left": 860,
+      "top": 360,
+      "width": 260,
+      "height": 70,
+      "fill": "#2563eb",
+      "rx": 16
+    },
+    {
+      "type": "text",
+      "text": "سجل مقعدك الآن ←",
+      "left": 880,
+      "top": 378,
+      "width": 220,
+      "fontFamily": "Cairo",
+      "fontSize": 24,
+      "fontWeight": "bold",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "⏱ مدة الدورة: 8 أسابيع مكثفة  |  🎓 شهادة إتمام معتمدة",
+      "left": 400,
+      "top": 480,
+      "width": 720,
+      "fontFamily": "Almarai",
+      "fontSize": 22,
+      "fontWeight": "600",
+      "fill": "#94a3b8",
+      "textAlign": "right",
+      "direction": "rtl"
+    }
+  ]
+}
+

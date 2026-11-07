@@ -1,0 +1,88 @@
+{
+  "id": "quote-card-minimal",
+  "name_ar": "بطاقة اقتباس ملهم ومينيمال",
+  "name_en": "Minimalist Inspirational Quote Card",
+  "category": "social",
+  "language": "en",
+  "tags": ["quote", "minimal", "editorial", "luxury", "instagram"],
+  "canvas": {
+    "width": 1080,
+    "height": 1080,
+    "background": "#fafaf9"
+  },
+  "objects": [
+    {
+      "type": "rect",
+      "left": 80,
+      "top": 80,
+      "width": 920,
+      "height": 920,
+      "fill": "transparent",
+      "stroke": "#e7e5e4",
+      "strokeWidth": 1.5,
+      "rx": 0
+    },
+    {
+      "type": "text",
+      "text": "“",
+      "left": 140,
+      "top": 160,
+      "width": 800,
+      "fontFamily": "Playfair Display",
+      "fontSize": 140,
+      "fontWeight": "bold",
+      "fill": "#b45309",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "Simplicity is the ultimate sophistication.",
+      "left": 140,
+      "top": 360,
+      "width": 800,
+      "fontFamily": "Playfair Display",
+      "fontSize": 62,
+      "fontWeight": "bold",
+      "fill": "#1c1917",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "line",
+      "left": 490,
+      "top": 620,
+      "width": 100,
+      "height": 2,
+      "stroke": "#b45309",
+      "strokeWidth": 2
+    },
+    {
+      "type": "text",
+      "text": "LEONARDO DA VINCI",
+      "left": 140,
+      "top": 660,
+      "width": 800,
+      "fontFamily": "Montserrat",
+      "fontSize": 20,
+      "fontWeight": "600",
+      "fill": "#78716c",
+      "textAlign": "center",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "AI DESIGN STUDIO • DAILY INSPIRATION",
+      "left": 140,
+      "top": 880,
+      "width": 800,
+      "fontFamily": "Poppins",
+      "fontSize": 16,
+      "fontWeight": "normal",
+      "fill": "#a8a29e",
+      "textAlign": "center",
+      "direction": "ltr"
+    }
+  ]
+}
+

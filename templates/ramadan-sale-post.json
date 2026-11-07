@@ -1,0 +1,136 @@
+{
+  "id": "ramadan-sale-post",
+  "name_ar": "بوست عروض رمضان الفاخرة",
+  "name_en": "Ramadan Luxury Sale Post",
+  "category": "social",
+  "language": "ar",
+  "tags": ["ramadan", "sale", "instagram", "arabic", "gold"],
+  "canvas": {
+    "width": 1080,
+    "height": 1080,
+    "background": "#0b132b"
+  },
+  "objects": [
+    {
+      "type": "rect",
+      "left": 40,
+      "top": 40,
+      "width": 1000,
+      "height": 1000,
+      "fill": "transparent",
+      "stroke": "#f59e0b",
+      "strokeWidth": 2,
+      "rx": 16,
+      "opacity": 0.4
+    },
+    {
+      "type": "circle",
+      "left": 470,
+      "top": 120,
+      "width": 140,
+      "height": 140,
+      "fill": "#f59e0b",
+      "opacity": 0.15
+    },
+    {
+      "type": "text",
+      "text": "✨ أهلاً رمضان المبارك ✨",
+      "left": 140,
+      "top": 200,
+      "width": 800,
+      "fontFamily": "Amiri",
+      "fontSize": 38,
+      "fontWeight": "bold",
+      "fill": "#fbbf24",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "عروض التوفير الكبرى",
+      "left": 100,
+      "top": 280,
+      "width": 880,
+      "fontFamily": "Cairo",
+      "fontSize": 72,
+      "fontWeight": "800",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "rect",
+      "left": 340,
+      "top": 420,
+      "width": 400,
+      "height": 120,
+      "fill": "#d97706",
+      "rx": 24,
+      "opacity": 1.0
+    },
+    {
+      "type": "text",
+      "text": "خصم حتى 50%",
+      "left": 350,
+      "top": 445,
+      "width": 380,
+      "fontFamily": "Cairo",
+      "fontSize": 48,
+      "fontWeight": "bold",
+      "fill": "#ffffff",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "تسوق الآن تشكيلة الهدايا والمستلزمات الرمضانية الفاخرة بأسعار مميزة",
+      "left": 160,
+      "top": 600,
+      "width": 760,
+      "fontFamily": "Tajawal",
+      "fontSize": 32,
+      "fontWeight": "normal",
+      "fill": "#e2e8f0",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "rect",
+      "left": 365,
+      "top": 780,
+      "width": 350,
+      "height": 80,
+      "fill": "#1e293b",
+      "stroke": "#f59e0b",
+      "strokeWidth": 2,
+      "rx": 40
+    },
+    {
+      "type": "text",
+      "text": "اطلب الآن عبر المتجر ←",
+      "left": 380,
+      "top": 800,
+      "width": 320,
+      "fontFamily": "Cairo",
+      "fontSize": 28,
+      "fontWeight": "bold",
+      "fill": "#fbbf24",
+      "textAlign": "center",
+      "direction": "rtl"
+    },
+    {
+      "type": "text",
+      "text": "www.your-ramadan-store.com",
+      "left": 290,
+      "top": 940,
+      "width": 500,
+      "fontFamily": "Poppins",
+      "fontSize": 20,
+      "fontWeight": "normal",
+      "fill": "#94a3b8",
+      "textAlign": "center",
+      "direction": "ltr"
+    }
+  ]
+}
+

@@ -1,0 +1,133 @@
+{
+  "id": "business-card-modern",
+  "name_ar": "بطاقة عمل عصرية فاخرة",
+  "name_en": "Modern Creative Business Card",
+  "category": "card",
+  "language": "en",
+  "tags": ["business", "card", "professional", "minimal", "dark"],
+  "canvas": {
+    "width": 1050,
+    "height": 600,
+    "background": "#0f172a"
+  },
+  "objects": [
+    {
+      "type": "rect",
+      "left": 0,
+      "top": 0,
+      "width": 16,
+      "height": 600,
+      "fill": "#38bdf8"
+    },
+    {
+      "type": "circle",
+      "left": 80,
+      "top": 80,
+      "width": 80,
+      "height": 80,
+      "fill": "#38bdf8",
+      "opacity": 0.2
+    },
+    {
+      "type": "text",
+      "text": "◆ STUDIO",
+      "left": 80,
+      "top": 95,
+      "width": 250,
+      "fontFamily": "Montserrat",
+      "fontSize": 24,
+      "fontWeight": "bold",
+      "fill": "#38bdf8",
+      "textAlign": "left",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "ALEXANDER WRIGHT",
+      "left": 80,
+      "top": 200,
+      "width": 800,
+      "fontFamily": "Poppins",
+      "fontSize": 48,
+      "fontWeight": "bold",
+      "fill": "#ffffff",
+      "textAlign": "left",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "Chief Product Designer & Creative Director",
+      "left": 80,
+      "top": 265,
+      "width": 700,
+      "fontFamily": "Poppins",
+      "fontSize": 22,
+      "fontWeight": "normal",
+      "fill": "#94a3b8",
+      "textAlign": "left",
+      "direction": "ltr"
+    },
+    {
+      "type": "line",
+      "left": 80,
+      "top": 330,
+      "width": 890,
+      "height": 2,
+      "stroke": "#1e293b",
+      "strokeWidth": 2
+    },
+    {
+      "type": "text",
+      "text": "✉  alexander@designstudio.io",
+      "left": 80,
+      "top": 370,
+      "width": 400,
+      "fontFamily": "Roboto",
+      "fontSize": 20,
+      "fontWeight": "normal",
+      "fill": "#cbd5e1",
+      "textAlign": "left",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "☎  +1 (555) 890-2341",
+      "left": 80,
+      "top": 420,
+      "width": 400,
+      "fontFamily": "Roboto",
+      "fontSize": 20,
+      "fontWeight": "normal",
+      "fill": "#cbd5e1",
+      "textAlign": "left",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "🌐  www.designstudio.io",
+      "left": 550,
+      "top": 370,
+      "width": 400,
+      "fontFamily": "Roboto",
+      "fontSize": 20,
+      "fontWeight": "normal",
+      "fill": "#cbd5e1",
+      "textAlign": "left",
+      "direction": "ltr"
+    },
+    {
+      "type": "text",
+      "text": "📍  Silicon Valley, CA",
+      "left": 550,
+      "top": 420,
+      "width": 400,
+      "fontFamily": "Roboto",
+      "fontSize": 20,
+      "fontWeight": "normal",
+      "fill": "#cbd5e1",
+      "textAlign": "left",
+      "direction": "ltr"
+    }
+  ]
+}
+
