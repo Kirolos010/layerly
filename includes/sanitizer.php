@@ -11,7 +11,10 @@
  * - Strips unknown / injected properties
  */
 
-defined('APP_INIT') or define('APP_INIT', true);
+if (!defined('APP_INIT')) {
+    http_response_code(403);
+    exit('403 Forbidden - Direct access not allowed.');
+}
 
 require_once __DIR__ . '/security.php';
 

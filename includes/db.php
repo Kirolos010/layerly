@@ -6,7 +6,10 @@
  * and strict prepared statements.
  */
 
-defined('APP_INIT') or define('APP_INIT', true);
+if (!defined('APP_INIT')) {
+    http_response_code(403);
+    exit('403 Forbidden - Direct access not allowed.');
+}
 
 // Load configuration if not already loaded
 if (!defined('DB_HOST')) {

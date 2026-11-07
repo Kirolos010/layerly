@@ -11,6 +11,11 @@
 
 define('APP_INIT', true);
 
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    exit('403 Forbidden - CLI only.');
+}
+
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 $pdo = get_db();

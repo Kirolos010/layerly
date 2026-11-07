@@ -6,6 +6,11 @@
 
 define('APP_INIT', true);
 
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    exit('403 Forbidden - Tests can only be executed via CLI.');
+}
+
 $tests = [
     'Diagnostics'            => 'diagnostics_test.php',
     'HTTP Endpoints'         => 'http_endpoints_test.php',
@@ -16,6 +21,8 @@ $tests = [
     'i18n & Glass UI'        => 'i18n_and_glass_ui_test.php',
     'Hybrid & Vision'        => 'hybrid_vision_test.php',
     'Poster Pipeline'        => 'poster_pipeline_test.php',
+    'Link Integrity Crawler' => 'link_check_test.php',
+    'Security Access'        => 'security_access_test.php',
 ];
 
 echo "========================================================\n";

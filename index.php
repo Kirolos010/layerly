@@ -8,6 +8,57 @@ define('APP_INIT', true);
 
 require_once __DIR__ . '/includes/bootstrap.php';
 
+// Universal front-controller route dispatcher (for Nginx try_files and PHP built-in server)
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+if (defined('BASE_SUBDIR') && BASE_SUBDIR !== '' && str_starts_with($requestPath, BASE_SUBDIR)) {
+    $requestPath = substr($requestPath, strlen(BASE_SUBDIR));
+}
+$trimmedRoute = trim($requestPath, '/');
+
+// Block direct web access to internal server directories on non-Apache environments
+$firstSegment = explode('/', $trimmedRoute)[0] ?? '';
+$blockedPrefixes = ['includes', 'storage', 'database', 'tests', 'tools', 'docs', 'starter-templates', 'lang'];
+if (in_array($firstSegment, $blockedPrefixes, true) || $trimmedRoute === 'config.php') {
+    http_response_code(403);
+    header('Content-Type: text/plain; charset=utf-8');
+    exit('403 Forbidden - Access denied.');
+}
+
+$cleanRouteMap = [
+    'login'           => __DIR__ . '/auth/login.php',
+    'register'        => __DIR__ . '/auth/register.php',
+    'logout'          => __DIR__ . '/auth/logout.php',
+    'forgot-password' => __DIR__ . '/auth/forgot-password.php',
+    'reset-password'  => __DIR__ . '/auth/reset-password.php',
+    'profile'         => __DIR__ . '/account/profile.php',
+    'projects'        => __DIR__ . '/account/projects.php',
+    'history'         => __DIR__ . '/account/history.php',
+    'templates'       => __DIR__ . '/pages/templates.php',
+    'about'           => __DIR__ . '/pages/about.php',
+];
+
+$legacyRedirectMap = [
+    'login.php'           => 'login',
+    'register.php'        => 'register',
+    'logout.php'          => 'logout',
+    'forgot-password.php' => 'forgot-password',
+    'reset-password.php'  => 'reset-password',
+    'profile.php'         => 'profile',
+    'projects.php'        => 'projects',
+    'history.php'         => 'history',
+    'templates.php'       => 'templates',
+    'about.php'           => 'about',
+];
+
+if (isset($legacyRedirectMap[$trimmedRoute])) {
+    redirect($legacyRedirectMap[$trimmedRoute], 301);
+}
+
+if (isset($cleanRouteMap[$trimmedRoute])) {
+    require $cleanRouteMap[$trimmedRoute];
+    exit;
+}
+
 // Send security headers & initialize session
 send_security_headers();
 init_secure_session();

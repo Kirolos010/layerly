@@ -11,7 +11,10 @@
  * - Secure file-based error and event logging
  */
 
-defined('APP_INIT') or define('APP_INIT', true);
+if (!defined('APP_INIT')) {
+    http_response_code(403);
+    exit('403 Forbidden - Direct access not allowed.');
+}
 
 // Start secure session if not active
 function init_secure_session(): void {
