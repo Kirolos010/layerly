@@ -129,7 +129,7 @@ async def run_phase_6_browser_tests():
         # -------------------------------------------------------------
         print("\n--- [TEST 2] Reconstructing Poster Layers in Fabric.js ---", flush=True)
         # Read the verified vision OCR result from the reference image
-        vision_file = r"c:\laragon\www\ai-design-studio\scripts\test_vision_result.json"
+        vision_file = os.path.join(os.path.dirname(__file__), "fixtures", "sample_poster_vision.json")
         with open(vision_file, "r", encoding="utf-8") as f:
             vision_data = json.load(f)
 
