@@ -1,6 +1,4 @@
--- AI Design Studio - Phase 1.5 Database Migration
--- Adds user accounts, password resets, generation history, and user_id to projects
-
+-- Migration 002: User Accounts, Password Resets, and Generations History
 CREATE TABLE IF NOT EXISTS `users` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(255) NOT NULL,
