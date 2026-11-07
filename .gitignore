@@ -1,13 +1,22 @@
+# Configuration and Environment Secrets
 config.php
 .env
+
+# Storage logs and uploaded files (preserve directory placeholders)
 storage/logs/*
 !storage/logs/.gitkeep
 storage/uploads/*
 !storage/uploads/.gitkeep
 *.log
+
+# OS metadata
 .DS_Store
 Thumbs.db
+
+# IDE and Editor configurations
 .vscode/
 .idea/
+
+# Python cache
 __pycache__/
 *.pyc
