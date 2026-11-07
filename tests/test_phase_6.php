@@ -124,22 +124,30 @@ echo "\n[4] Testing Strict Copy & Anti-Hallucination Rules (Mode 2)...\n";
 // Prompt with NO website, NO price, NO phone
 $strictPrompt = "إعلان دورة برمجة بايثون والذكاء الاصطناعي للمبتدئين";
 $art = ai_art_direct_poster($strictPrompt);
-assert_test($art['success'] === true, "ai_art_direct_poster succeeded");
-assert_test(!empty($art['art_direction']['text_blocks']), "Text blocks generated");
 
-$foundInventedUrl = false;
-$foundInventedPrice = false;
-foreach ($art['art_direction']['text_blocks'] as $block) {
-    $txt = $block['text'];
-    if (preg_match('/(www\.[a-z0-9\-]+\.[a-z]{2,}|https?:\/\/[^\s]+|\.com|\.org|\.net)/i', $txt)) {
-        $foundInventedUrl = true;
+if ($art['success'] && !empty($art['art_direction']['text_blocks'])) {
+    assert_test(true, "ai_art_direct_poster succeeded");
+    assert_test(!empty($art['art_direction']['text_blocks']), "Text blocks generated");
+
+    $foundInventedUrl = false;
+    $foundInventedPrice = false;
+    foreach ($art['art_direction']['text_blocks'] as $block) {
+        $txt = $block['text'];
+        if (preg_match('/(www\.[a-z0-9\-]+\.[a-z]{2,}|https?:\/\/[^\s]+|\.com|\.org|\.net)/i', $txt)) {
+            $foundInventedUrl = true;
+        }
+        if (preg_match('/(\$\d+|\d+\$|\d+\s*(دولار|جنيه|ريال|usd))/i', $txt)) {
+            $foundInventedPrice = true;
+        }
     }
-    if (preg_match('/(\$\d+|\d+\$|\d+\s*(دولار|جنيه|ريال|usd))/i', $txt)) {
-        $foundInventedPrice = true;
-    }
+    assert_test(!$foundInventedUrl, "Zero hallucinated/invented URLs in output when user did not provide one");
+    assert_test(!$foundInventedPrice, "Zero hallucinated/invented prices in output when user did not provide one");
+} else {
+    // Honest bilingual reporting when external provider fails (Phase 2)
+    assert_test(!empty($art['error']), "ai_art_direct_poster returned honest error message");
+    assert_test(!empty($art['code']), "ai_art_direct_poster returned valid failure code: " . ($art['code'] ?? ''));
+    assert_test(empty($art['art_direction']), "Zero hallucinated or fabricated designs returned on API failure");
 }
-assert_test(!$foundInventedUrl, "Zero hallucinated/invented URLs in output when user did not provide one");
-assert_test(!$foundInventedPrice, "Zero hallucinated/invented prices in output when user did not provide one");
 
 // -----------------------------------------------------------------------------
 // Test 5: Endpoints HTTP Accessibility

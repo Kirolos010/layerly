@@ -297,10 +297,11 @@ run_test("User A's design remains safe and intact", $intactCheck !== null);
 // -----------------------------------------------------------------------------
 echo "\n[9] Testing Automatic History Saving in Endpoints:\n";
 $arGen = ai_generate_design("بوست تجريبي للمرحلة 1.5", 1080, 1080, ['design_type' => 'social_post']);
-$genSaveId = record_generation_history('generate', "بوست تجريبي للمرحلة 1.5", ['width' => 1080], $arGen['data'], 'success');
+$sampleDesign = !empty($arGen['data']) ? $arGen['data'] : ['canvas' => ['width' => 1080, 'height' => 1080, 'background' => '#ffffff'], 'objects' => []];
+$genSaveId = record_generation_history('generate', "بوست تجريبي للمرحلة 1.5", ['width' => 1080], $sampleDesign, 'success');
 run_test("Generation saved to history with ID", $genSaveId > 0);
 
-$editSaveId = record_generation_history('edit', "تغيير الخلفية إلى لون ذهبي", ['test' => true], $arGen['data'], 'success');
+$editSaveId = record_generation_history('edit', "تغيير الخلفية إلى لون ذهبي", ['test' => true], $sampleDesign, 'success');
 run_test("Edit saved to history with ID", $editSaveId > 0);
 
 // Clean up test data

@@ -6,7 +6,6 @@
  * - Primary provider: Google Gemini API (structured JSON output with responseSchema)
  * - Automatic fallback: Groq or OpenRouter (OpenAI-compatible chat completions)
  * - Automatic single-retry on invalid JSON responses
- * - Built-in offline intelligent mock engine when API keys are unconfigured
  * - Strict bilingual error translation and logging
  */
 
@@ -173,7 +172,7 @@ function call_gemini_api(string $systemPrompt, string $userPrompt, ?array $schem
             continue;
         }
 
-        return ['success' => true, 'content' => $content, 'code' => null, 'error' => null];
+        return ['success' => true, 'content' => $content, 'model' => $model, 'code' => null, 'error' => null];
     }
 
     return $lastError ?: ['success' => false, 'code' => 'ALL_MODELS_FAILED', 'error' => t('ai_invalid_response')];
@@ -266,367 +265,37 @@ function call_fallback_api(string $systemPrompt, string $userPrompt, bool $jsonM
         return ['success' => false, 'code' => 'FALLBACK_EMPTY', 'error' => t('ai_invalid_response')];
     }
 
-    return ['success' => true, 'content' => $content, 'code' => null, 'error' => null];
+    return ['success' => true, 'content' => $content, 'model' => $model, 'code' => null, 'error' => null];
 }
 
 /**
- * Intelligent Mock Engine (used when no API keys are provided or in offline sandbox)
- * Returns structured design JSON or enhanced prompt based on language and keywords.
- */
-function generate_intelligent_mock(string $type, string $prompt, int $width = 1080, int $height = 1080, array $options = []): array {
-    $isArabic = is_arabic_text($prompt) || ($options['language'] ?? '') === 'ar';
-    $fontHeading = $isArabic ? 'Cairo' : 'Poppins';
-    $fontBody = $isArabic ? 'Tajawal' : 'Montserrat';
-    $direction = $isArabic ? 'rtl' : 'ltr';
-    $align = $isArabic ? 'right' : 'left';
-
-    $promptLower = mb_strtolower($prompt, 'UTF-8');
-    $isTech = (bool)preg_match('/برمج|كورس|دورة|ذكاء|اصطناع|تطوير|حاسوب|تقني|بيانات|سيرفر|مهندس|web|code|coder|program|develop|software|ai|artificial|tech|course|masterclass|bootcamp|python|cyber/iu', $promptLower);
-    $isFood = (bool)preg_match('/مطعم|طعام|أكل|برجر|بيتزا|وجب|شاورما|مشاوي|قهوة|كافيه|حلويات|food|restaurant|burger|pizza|coffee|cafe|bakery|grill|chef/iu', $promptLower);
-    $isBusiness = (bool)preg_match('/عقار|فيلا|شقة|استثمار|شركة|أعمال|تسويق|مكتب|تمويل|business|real estate|invest|agency|property|finance|corporate/iu', $promptLower);
-
-    // Color palettes and themed content based on prompt keywords or explicit mood
-    $mood = strtolower($options['color_mood'] ?? '');
-
-    if ($isTech || str_contains($mood, 'cyber') || str_contains($mood, 'tech')) {
-        $bg = '#090d16';
-        $titleColor = '#ffffff';
-        $accentColor = '#06b6d4';
-        $subColor = '#94a3b8';
-        $cardBg = '#0f172a';
-        $badgeText = $isArabic ? 'دورة تدريبية معتمدة 🚀' : 'CERTIFIED MASTERCLASS 🚀';
-        $subText = $isArabic ? 'احترف بناء الأنظمة والبرمجيات الذكية مع تطبيق عملي خطوة بخطوة' : 'Master intelligent software and practical cutting-edge workflows';
-        $ctaText = $isArabic ? 'سجل الآن واحجز مقعدك' : 'Enroll Now';
-        $imageQuery = 'futuristic artificial intelligence neural network programming coding workspace dark glowing cyber';
-        $imagePrompt = 'futuristic high-tech workspace programmer workstation dual curved monitors glowing neural network artificial intelligence cyan and blue dark cinematic lighting 8k no text no letters';
-    } elseif ($isFood || str_contains($mood, 'warm') || str_contains($mood, 'food')) {
-        $bg = '#1c0f0b';
-        $titleColor = '#fff7ed';
-        $accentColor = '#f97316';
-        $subColor = '#fed7aa';
-        $cardBg = '#2c1510';
-        $badgeText = $isArabic ? 'عروض المذاق الخاص 🔥' : 'SPECIAL FLAVOR OFFER 🔥';
-        $subText = $isArabic ? 'استمتع بأشهى المأكولات والمشروبات الطازجة المحضرة بعناية فائقة' : 'Enjoy mouthwatering fresh flavors prepared with passion and mastery';
-        $ctaText = $isArabic ? 'اطلب وجبتك الآن' : 'Order Now';
-        $imageQuery = 'delicious gourmet culinary meal restaurant food photography';
-        $imagePrompt = 'delicious gourmet culinary meal beautifully presented on a dark rustic stone table warm lighting appetizing 8k no text no letters';
-    } elseif ($isBusiness || str_contains($mood, 'luxury') || str_contains($mood, 'corporate')) {
-        $bg = '#0f172a';
-        $titleColor = '#f8fafc';
-        $accentColor = '#3b82f6';
-        $subColor = '#94a3b8';
-        $cardBg = '#1e293b';
-        $badgeText = $isArabic ? 'فرصة استثمارية حصرية 💎' : 'EXCLUSIVE OPPORTUNITY 💎';
-        $subText = $isArabic ? 'حلول احترافية متكاملة لنمو أعمالك وتحقيق أعلى عوائد استثمارية' : 'Comprehensive solutions to scale your business and accelerate growth';
-        $ctaText = $isArabic ? 'تواصل معنا الآن' : 'Contact Us';
-        $imageQuery = 'modern corporate architectural skyscraper business meeting';
-        $imagePrompt = 'modern luxury corporate glass architecture skyscraper interior sleek professional lighting 8k no text no letters';
-    } else {
-        // Modern Clean Default
-        $bg = '#f8fafc';
-        $titleColor = '#0f172a';
-        $accentColor = '#4f46e5';
-        $subColor = '#64748b';
-        $cardBg = '#ffffff';
-        $badgeText = $isArabic ? 'عرض مميز وحصري ✨' : 'EXCLUSIVE OFFER ✨';
-        $subText = $isArabic ? 'اكتشف أفضل الخيارات والخدمات المصممة خصيصاً لتلبية احتياجاتك' : 'Discover premium quality curated specifically for your needs';
-        $ctaText = $isArabic ? 'اكتشف المزيد' : 'Learn More';
-        $imageQuery = $prompt ?: 'minimalist modern studio creative design';
-        $imagePrompt = 'clean elegant aesthetic design product photography minimal background lighting 8k no text no letters';
-    }
-
-    if ($type === 'enhance') {
-        if ($isArabic) {
-            $enhanced = "تصميم احترافي متكامل لفكرة: '{$prompt}'\n"
-                      . "- الفكرة والمفهوم: تجسيد هوية بصرية عصرية مع إبراز العناصر الترويجية الرئيسية بدقة وجاذبية.\n"
-                      . "- لوحة الألوان: تدرجات راقية تجمع بين {$bg} للخلفية، و{$titleColor} للخطوط العريضة، مع لمسات جذابة بلون {$accentColor}.\n"
-                      . "- التيبوغرافي والخطوط: خط {$fontHeading} العريض للعنوان الرئيسي لجذب الانتباه، مع خط {$fontBody} للنصوص الفرعية لسهولة القراءة.\n"
-                      . "- التوزيع البصري: تسلسل هرمي واضح (شعار/شارة علوية، عنوان بارز، نصوص تفصيلية، وزر دعوة لاتخاذ إجراء CTA).\n"
-                      . "- نصوص التصميم المقترحة: عنوان رئيسي ملفت، تفاصيل العرض، ودعوة صريحة للطلب أو الشراء.";
-        } else {
-            $enhanced = "Detailed Professional Design Brief for: '{$prompt}'\n"
-                      . "- Concept & Theme: Contemporary, high-converting visual composition highlighting key promotional elements.\n"
-                      . "- Color Palette: Refined balance featuring base ({$bg}), high-contrast headlines ({$titleColor}), and accent highlights ({$accentColor}).\n"
-                      . "- Typography: Bold {$fontHeading} for eye-catching hero titles paired with elegant {$fontBody} for legible subheadings and details.\n"
-                      . "- Layout & Hierarchy: Strategic focal point with top branding badge, strong central headline, descriptive body, and clear Call-to-Action (CTA).\n"
-                      . "- Content Elements: Punchy headline, secondary value proposition, and an action badge.";
-        }
-        return ['text' => $enhanced, 'lang' => $isArabic ? 'ar' : 'en'];
-    }
-
-    // Default design objects generator
-    $titleText = $isArabic ? (mb_substr($prompt, 0, 50) ?: 'عرض خاص وحصري') : (substr($prompt, 0, 50) ?: 'Exclusive Special Offer');
-
-    $titleLeft = $isArabic ? ($width - 80) : 80;
-    $titleAlign = $isArabic ? 'right' : 'left';
-    $imgW = $width - 180;
-    $imgH = max(200, (int)($height * 0.32));
-    $mockImgPollinations = 'https://image.pollinations.ai/prompt/' . rawurlencode($imagePrompt) . "?width={$imgW}&height={$imgH}&nologo=true";
-
-    $objects = [
-        // Decorative background card
-        [
-            'type'        => 'rect',
-            'text'        => '',
-            'left'        => 50,
-            'top'         => 50,
-            'width'       => $width - 100,
-            'height'      => $height - 100,
-            'fill'        => $cardBg,
-            'stroke'      => $accentColor,
-            'strokeWidth' => 2,
-            'fontFamily'  => $fontHeading,
-            'fontSize'    => 24,
-            'fontWeight'  => 'normal',
-            'textAlign'   => 'left',
-            'direction'   => 'ltr',
-            'angle'       => 0,
-            'opacity'     => 0.95,
-            'rx'          => 24,
-            'imageQuery'  => ''
-        ],
-        // Top highlight circle accent
-        [
-            'type'        => 'circle',
-            'text'        => '',
-            'left'        => $width - 160,
-            'top'         => 80,
-            'width'       => 120,
-            'height'      => 120,
-            'fill'        => $accentColor,
-            'stroke'      => 'transparent',
-            'strokeWidth' => 0,
-            'fontFamily'  => $fontHeading,
-            'fontSize'    => 16,
-            'fontWeight'  => 'normal',
-            'textAlign'   => 'center',
-            'direction'   => 'ltr',
-            'angle'       => 0,
-            'opacity'     => 0.15,
-            'rx'          => 0,
-            'imageQuery'  => ''
-        ],
-        // Top Badge Rect
-        [
-            'type'        => 'rect',
-            'text'        => '',
-            'left'        => $isArabic ? ($width - 340) : 90,
-            'top'         => 110,
-            'width'       => 250,
-            'height'      => 48,
-            'fill'        => $accentColor,
-            'stroke'      => 'transparent',
-            'strokeWidth' => 0,
-            'fontFamily'  => $fontHeading,
-            'fontSize'    => 16,
-            'fontWeight'  => 'bold',
-            'textAlign'   => 'center',
-            'direction'   => $direction,
-            'angle'       => 0,
-            'opacity'     => 1,
-            'rx'          => 8,
-            'imageQuery'  => ''
-        ],
-        // Top Badge Text
-        [
-            'type'        => 'text',
-            'text'        => $badgeText,
-            'left'        => $isArabic ? ($width - 330) : 100,
-            'top'         => 122,
-            'width'       => 230,
-            'height'      => 30,
-            'fill'        => '#ffffff',
-            'stroke'      => 'transparent',
-            'strokeWidth' => 0,
-            'fontFamily'  => $fontHeading,
-            'fontSize'    => 18,
-            'fontWeight'  => 'bold',
-            'textAlign'   => 'center',
-            'direction'   => $direction,
-            'angle'       => 0,
-            'opacity'     => 1,
-            'rx'          => 0,
-            'imageQuery'  => ''
-        ],
-        // Main Title
-        [
-            'type'        => 'text',
-            'text'        => $titleText,
-            'left'        => 90,
-            'top'         => 210,
-            'width'       => $width - 180,
-            'height'      => 120,
-            'fill'        => $titleColor,
-            'stroke'      => 'transparent',
-            'strokeWidth' => 0,
-            'fontFamily'  => $fontHeading,
-            'fontSize'    => 54,
-            'fontWeight'  => 'bold',
-            'textAlign'   => $titleAlign,
-            'direction'   => $direction,
-            'angle'       => 0,
-            'opacity'     => 1,
-            'rx'          => 0,
-            'imageQuery'  => ''
-        ],
-        // Subtitle
-        [
-            'type'        => 'text',
-            'text'        => $subText,
-            'left'        => 90,
-            'top'         => 350,
-            'width'       => $width - 180,
-            'height'      => 80,
-            'fill'        => $subColor,
-            'stroke'      => 'transparent',
-            'strokeWidth' => 0,
-            'fontFamily'  => $fontBody,
-            'fontSize'    => 26,
-            'fontWeight'  => 'normal',
-            'textAlign'   => $titleAlign,
-            'direction'   => $direction,
-            'angle'       => 0,
-            'opacity'     => 0.9,
-            'rx'          => 0,
-            'imageQuery'  => ''
-        ],
-        // Decorative divider line
-        [
-            'type'        => 'line',
-            'text'        => '',
-            'left'        => 90,
-            'top'         => 460,
-            'width'       => 160,
-            'height'      => 4,
-            'fill'        => $accentColor,
-            'stroke'      => $accentColor,
-            'strokeWidth' => 4,
-            'fontFamily'  => $fontHeading,
-            'fontSize'    => 14,
-            'fontWeight'  => 'normal',
-            'textAlign'   => 'left',
-            'direction'   => 'ltr',
-            'angle'       => 0,
-            'opacity'     => 1,
-            'rx'          => 2,
-            'imageQuery'  => ''
-        ],
-        // Image Placeholder element
-        [
-            'type'        => 'image',
-            'src'         => 'api/proxy-image.php?url=' . urlencode($mockImgPollinations),
-            'text'        => '',
-            'left'        => 90,
-            'top'         => 500,
-            'width'       => $imgW,
-            'height'      => $imgH,
-            'fill'        => '#cbd5e1',
-            'stroke'      => '#94a3b8',
-            'strokeWidth' => 1,
-            'fontFamily'  => $fontHeading,
-            'fontSize'    => 16,
-            'fontWeight'  => 'normal',
-            'textAlign'   => 'center',
-            'direction'   => 'ltr',
-            'angle'       => 0,
-            'opacity'     => 0.95,
-            'rx'          => 16,
-            'imageQuery'  => $imageQuery
-        ],
-        // CTA Button Rect
-        [
-            'type'        => 'rect',
-            'text'        => '',
-            'left'        => $isArabic ? ($width - 390) : 90,
-            'top'         => $height - 180,
-            'width'       => 300,
-            'height'      => 64,
-            'fill'        => $accentColor,
-            'stroke'      => 'transparent',
-            'strokeWidth' => 0,
-            'fontFamily'  => $fontHeading,
-            'fontSize'    => 20,
-            'fontWeight'  => 'bold',
-            'textAlign'   => 'center',
-            'direction'   => $direction,
-            'angle'       => 0,
-            'opacity'     => 1,
-            'rx'          => 14,
-            'imageQuery'  => ''
-        ],
-        // CTA Button Text
-        [
-            'type'        => 'text',
-            'text'        => $ctaText,
-            'left'        => $isArabic ? ($width - 390) : 90,
-            'top'         => $height - 162,
-            'width'       => 300,
-            'height'      => 36,
-            'fill'        => '#ffffff',
-            'stroke'      => 'transparent',
-            'strokeWidth' => 0,
-            'fontFamily'  => $fontHeading,
-            'fontSize'    => 22,
-            'fontWeight'  => 'bold',
-            'textAlign'   => 'center',
-            'direction'   => $direction,
-            'angle'       => 0,
-            'opacity'     => 1,
-            'rx'          => 0,
-            'imageQuery'  => ''
-        ]
-    ];
-
-    if (!empty($options['generate_background'])) {
-        $bgPrompt = "thematic aesthetic background illustration for {$prompt}, clean digital art, soft atmospheric lighting, no text, no words, no letters, no watermark, no logos";
-        $pollinationsUrl = 'https://image.pollinations.ai/prompt/' . rawurlencode($bgPrompt) . "?width={$width}&height={$height}&nologo=true";
-        array_unshift($objects, [
-            'type'         => 'image',
-            'src'          => 'api/proxy-image.php?url=' . urlencode($pollinationsUrl),
-            'left'         => 0.0,
-            'top'          => 0.0,
-            'width'        => (float)$width,
-            'height'       => (float)$height,
-            'fill'         => '#ffffff',
-            'locked'       => true,
-            'isBackground' => true,
-            'name'         => t('ai_background_layer')
-        ]);
-    }
-
-    return [
-        'canvas'  => [
-            'width'      => $width,
-            'height'     => $height,
-            'background' => $bg
-        ],
-        'objects' => $objects
-    ];
-}
-
-/**
- * Universal AI Caller with automatic secondary provider fallback and intelligent offline mode
+ * Universal AI Caller with automatic secondary provider fallback
+ * The only allowed fallback is a real second provider that is actually configured.
  * 
  * @param string $systemPrompt
  * @param string $userPrompt
  * @param array|null $schema
  * @param bool $jsonMode
- * @return array ['success' => bool, 'content' => string, 'provider' => string, 'error' => ?string]
+ * @return array ['success' => bool, 'content' => ?string, 'provider' => string, 'model' => ?string, 'code' => ?string, 'error' => ?string]
  */
 function ai_dispatch(string $systemPrompt, string $userPrompt, ?array $schema = null, bool $jsonMode = true): array {
     $geminiKey = defined('GEMINI_API_KEY') ? trim(GEMINI_API_KEY) : '';
     $fallbackKey = defined('FALLBACK_API_KEY') ? trim(FALLBACK_API_KEY) : '';
 
-    // If both API keys are empty, seamlessly use high quality intelligent offline generator
     if (empty($geminiKey) && empty($fallbackKey)) {
-        app_log("No API keys configured, using internal intelligent generator", 'INFO', 'ai.log');
+        app_log("No AI API keys configured in config.php", 'ERROR', 'ai.log');
         return [
-            'success'  => true,
-            'content'  => null, // signal to caller to use mock generator
-            'provider' => 'internal_engine',
-            'error'    => null
+            'success'  => false,
+            'content'  => null,
+            'provider' => 'none',
+            'model'    => null,
+            'code'     => 'NO_KEY',
+            'error'    => t('ai_missing_key')
         ];
     }
+
+    $geminiRes = null;
+    $fallbackRes = null;
 
     // 1. Try Gemini API first if key exists
     if (!empty($geminiKey)) {
@@ -636,6 +305,8 @@ function ai_dispatch(string $systemPrompt, string $userPrompt, ?array $schema = 
                 'success'  => true,
                 'content'  => $geminiRes['content'],
                 'provider' => 'gemini',
+                'model'    => $geminiRes['model'] ?? (defined('GEMINI_MODEL') ? GEMINI_MODEL : 'gemini-3-flash-preview'),
+                'code'     => null,
                 'error'    => null
             ];
         }
@@ -643,7 +314,7 @@ function ai_dispatch(string $systemPrompt, string $userPrompt, ?array $schema = 
         app_log("Gemini failed ({$geminiRes['code']}). Attempting fallback provider if configured...", 'WARNING', 'ai.log');
     }
 
-    // 2. Try Fallback Provider (Groq / OpenRouter)
+    // 2. Try Fallback Provider (Groq / OpenRouter) if configured
     if (!empty($fallbackKey)) {
         $fallbackRes = call_fallback_api($systemPrompt, $userPrompt, $jsonMode);
         if ($fallbackRes['success']) {
@@ -651,6 +322,8 @@ function ai_dispatch(string $systemPrompt, string $userPrompt, ?array $schema = 
                 'success'  => true,
                 'content'  => $fallbackRes['content'],
                 'provider' => defined('FALLBACK_PROVIDER') ? FALLBACK_PROVIDER : 'fallback',
+                'model'    => $fallbackRes['model'] ?? (defined('FALLBACK_MODEL') ? FALLBACK_MODEL : 'llama-3.3-70b-versatile'),
+                'code'     => null,
                 'error'    => null
             ];
         }
@@ -658,14 +331,25 @@ function ai_dispatch(string $systemPrompt, string $userPrompt, ?array $schema = 
         app_log("Fallback provider also failed ({$fallbackRes['code']}).", 'ERROR', 'ai.log');
     }
 
-    // If remote providers failed, gracefully fall back to internal engine so the studio never breaks
-    $errMessage = !empty($geminiRes['error']) ? $geminiRes['error'] : (!empty($fallbackRes['error']) ? $fallbackRes['error'] : 'remote error');
-    app_log("Remote AI calls unsuccessful ({$errMessage}). Engaging internal intelligent engine fallback.", 'WARNING', 'ai.log');
+    // Return explicit bilingual error with the real failure reason
+    $primaryErr = $geminiRes['error'] ?? t('ai_invalid_response');
+    $primaryCode = $geminiRes['code'] ?? 'AI_FAILED';
+
+    if (!empty($fallbackKey) && !empty($fallbackRes['error'])) {
+        $errMessage = t('ai_fallback_failed') . " (" . $fallbackRes['error'] . ")";
+        $errCode = $fallbackRes['code'] ?? $primaryCode;
+    } else {
+        $errMessage = $primaryErr;
+        $errCode = $primaryCode;
+    }
+
     return [
-        'success'  => true,
+        'success'  => false,
         'content'  => null,
-        'provider' => 'internal_engine',
-        'error'    => null
+        'provider' => 'none',
+        'model'    => null,
+        'code'     => $errCode,
+        'error'    => $errMessage
     ];
 }
 
@@ -706,22 +390,11 @@ CRITICAL RULES:
 
     $res = ai_dispatch($systemInstruction, $userPrompt, null, false);
 
-    if (!$res['success']) {
+    if (!$res['success'] || empty($res['content'])) {
         return [
             'success' => false,
+            'code'    => $res['code'] ?? 'AI_FAILED',
             'error'   => $res['error'] ?? t('ai_invalid_response')
-        ];
-    }
-
-    // If internal mock engine used
-    if ($res['provider'] === 'internal_engine' || empty($res['content'])) {
-        $mock = generate_intelligent_mock('enhance', $rawIdea, 1080, 1080, ['language' => $lang]);
-        return [
-            'success'         => true,
-            'enhanced_prompt' => $mock['text'],
-            'original_prompt' => $rawIdea,
-            'detected_lang'   => $mock['lang'],
-            'provider'        => 'internal_engine'
         ];
     }
 
@@ -730,7 +403,8 @@ CRITICAL RULES:
         'enhanced_prompt' => trim($res['content']),
         'original_prompt' => $rawIdea,
         'detected_lang'   => $lang,
-        'provider'        => $res['provider']
+        'provider'        => $res['provider'],
+        'model'           => $res['model'] ?? null
     ];
 }
 
@@ -834,20 +508,11 @@ Language: {$targetLang}";
     // 1st Attempt
     $res = ai_dispatch($systemInstruction, $userPrompt, $schema, true);
 
-    if (!$res['success']) {
+    if (!$res['success'] || empty($res['content'])) {
         return [
             'success' => false,
+            'code'    => $res['code'] ?? 'AI_FAILED',
             'error'   => $res['error'] ?? t('ai_invalid_response')
-        ];
-    }
-
-    if ($res['provider'] === 'internal_engine' || empty($res['content'])) {
-        $mock = generate_intelligent_mock('generate', $prompt, $width, $height, $options);
-        $sanitized = sanitize_design_json($mock, $width, $height);
-        return [
-            'success'  => true,
-            'data'     => $sanitized,
-            'provider' => 'internal_engine'
         ];
     }
 
@@ -864,14 +529,12 @@ Language: {$targetLang}";
         }
     }
 
-    if ($parsed === null) {
-        app_log("Failed to parse AI JSON after retry. Engaging internal intelligent engine fallback.", 'WARNING', 'ai.log');
-        $mock = generate_intelligent_mock('generate', $prompt, $width, $height, $options);
-        $sanitized = sanitize_design_json($mock, $width, $height);
+    if ($parsed === null || !isset($parsed['objects']) || !is_array($parsed['objects'])) {
+        app_log("Failed to parse AI JSON after retry", 'ERROR', 'ai.log');
         return [
-            'success'  => true,
-            'data'     => $sanitized,
-            'provider' => 'internal_engine'
+            'success' => false,
+            'code'    => 'INVALID_JSON',
+            'error'   => t('ai_invalid_response')
         ];
     }
 
@@ -902,7 +565,8 @@ Language: {$targetLang}";
     return [
         'success'  => true,
         'data'     => $sanitized,
-        'provider' => $res['provider']
+        'provider' => $res['provider'],
+        'model'    => $res['model'] ?? null
     ];
 }
 
@@ -1107,39 +771,18 @@ Return ONLY a JSON object matching:
                     'fontFamily'     => $isAr ? 'Cairo' : 'Poppins'
                 ];
             }
+            if (empty($sanitizedBlocks)) {
+                return ['success' => false, 'code' => 'NO_TEXT_DETECTED', 'error' => t('no_text_detected')];
+            }
             return ['success' => true, 'blocks' => $sanitizedBlocks];
         }
     }
 
-    // Mock fallback for testing or when API key is missing
-    $mockBlocks = [
-        [
-            'text'           => 'SPECIAL OFFER 50% OFF',
-            'language'       => 'en',
-            'left_percent'   => 15.0,
-            'top_percent'    => 20.0,
-            'width_percent'  => 70.0,
-            'height_percent' => 12.0,
-            'fontSize'       => 42,
-            'fontWeight'     => 'bold',
-            'fill'           => '#f8fafc',
-            'fontFamily'     => 'Poppins'
-        ],
-        [
-            'text'           => 'عرض خاص وحصري لفترة محدودة',
-            'language'       => 'ar',
-            'left_percent'   => 20.0,
-            'top_percent'    => 40.0,
-            'width_percent'  => 60.0,
-            'height_percent' => 10.0,
-            'fontSize'       => 32,
-            'fontWeight'     => 'bold',
-            'fill'           => '#f59e0b',
-            'fontFamily'     => 'Cairo'
-        ]
+    return [
+        'success' => false,
+        'code'    => $res['code'] ?? 'VISION_FAILED',
+        'error'   => $res['error'] ?? t('no_text_detected')
     ];
-
-    return ['success' => true, 'blocks' => $mockBlocks];
 }
 
 /**
@@ -1172,29 +815,16 @@ function ai_remove_background_rmbg(string $imageData): array {
     }
 
     $token = defined('HUGGINGFACE_API_TOKEN') ? trim(HUGGINGFACE_API_TOKEN) : '';
+    if (empty($token)) {
+        return ['success' => false, 'code' => 'NO_TOKEN', 'error' => t('rmbg_token_missing')];
+    }
     $model = defined('HUGGINGFACE_RMBG_MODEL') && HUGGINGFACE_RMBG_MODEL ? trim(HUGGINGFACE_RMBG_MODEL) : 'briaai/RMBG-1.4';
     $url = "https://api-inference.huggingface.co/models/{$model}";
 
-    // If no HF token configured, mock token, or TEST_RUN without external HF token, return a transparent PNG cutout
-    if (empty($token) || $token === 'mock_token' || (defined('TEST_RUN') && TEST_RUN)) {
-        $mockPng = generate_mock_transparent_cutout();
-        $filename = 'cutout_' . time() . '_' . bin2hex(random_bytes(4)) . '.png';
-        $uploadPath = dirname(__DIR__) . '/storage/uploads/' . $filename;
-        file_put_contents($uploadPath, $mockPng);
-        return [
-            'success'   => true,
-            'image_url' => 'storage/uploads/' . $filename,
-            'data_url'  => 'data:image/png;base64,' . base64_encode($mockPng),
-            'model'     => $model
-        ];
-    }
-
     $headers = [
-        'Content-Type: application/octet-stream'
+        'Content-Type: application/octet-stream',
+        'Authorization: Bearer ' . $token
     ];
-    if (!empty($token)) {
-        $headers[] = 'Authorization: Bearer ' . $token;
-    }
 
     $timeout = 25;
     $ch = curl_init($url);
@@ -1220,17 +850,8 @@ function ai_remove_background_rmbg(string $imageData): array {
     }
 
     if ($curlErr) {
-        app_log("Hugging Face cURL error: {$curlErr}. Engaging transparent cutout fallback.", 'WARNING', 'ai.log');
-        $mockPng = generate_mock_transparent_cutout();
-        $filename = 'cutout_' . time() . '_' . bin2hex(random_bytes(4)) . '.png';
-        $uploadPath = dirname(__DIR__) . '/storage/uploads/' . $filename;
-        file_put_contents($uploadPath, $mockPng);
-        return [
-            'success'   => true,
-            'image_url' => 'storage/uploads/' . $filename,
-            'data_url'  => 'data:image/png;base64,' . base64_encode($mockPng),
-            'model'     => $model . ' (fallback)'
-        ];
+        app_log("Hugging Face cURL error: {$curlErr}", 'ERROR', 'ai.log');
+        return ['success' => false, 'code' => 'CURL_ERR', 'error' => t('rmbg_failed')];
     }
 
     // Model loading
@@ -1267,26 +888,6 @@ function ai_remove_background_rmbg(string $imageData): array {
         'data_url'  => 'data:image/png;base64,' . base64_encode($response),
         'model'     => $model
     ];
-}
-
-/**
- * Generate a clean 100x100 transparent PNG with a soft silhouette for testing/offline mock
- */
-function generate_mock_transparent_cutout(): string {
-    $img = imagecreatetruecolor(200, 200);
-    imagesavealpha($img, true);
-    $transparent = imagecolorallocatealpha($img, 0, 0, 0, 127);
-    imagefill($img, 0, 0, $transparent);
-    
-    // Draw subject circle
-    $subjectColor = imagecolorallocatealpha($img, 59, 130, 246, 20);
-    imagefilledellipse($img, 100, 100, 160, 160, $subjectColor);
-    
-    ob_start();
-    imagepng($img);
-    $data = ob_get_clean();
-    imagedestroy($img);
-    return $data;
 }
 
 /**
@@ -1344,48 +945,11 @@ Return the complete updated JSON:";
     // 1st Attempt
     $res = ai_dispatch($systemInstruction, $userPrompt, $schema, true);
 
-    if (!$res['success']) {
+    if (!$res['success'] || empty($res['content'])) {
         return [
             'success' => false,
+            'code'    => $res['code'] ?? 'AI_FAILED',
             'error'   => $res['error'] ?? t('ai_invalid_response')
-        ];
-    }
-
-    // If internal mock engine
-    if ($res['provider'] === 'internal_engine' || empty($res['content'])) {
-        // Apply smart parametric edits to existing design
-        $edited = $currentDesign;
-        $instLower = mb_strtolower($instruction);
-
-        if (str_contains($instLower, 'dark') || str_contains($instLower, 'داكن') || str_contains($instLower, 'كحلي')) {
-            $edited['canvas']['background'] = '#0f172a';
-            foreach ($edited['objects'] as &$o) {
-                if ($o['type'] === 'text') {
-                    $o['fill'] = '#f8fafc';
-                }
-            }
-        } elseif (str_contains($instLower, 'warm') || str_contains($instLower, 'دافي') || str_contains($instLower, 'برتقالي')) {
-            $edited['canvas']['background'] = '#fff7ed';
-            foreach ($edited['objects'] as &$o) {
-                if ($o['type'] === 'rect' && ($o['width'] ?? 0) > 400) {
-                    $o['fill'] = '#ffedd5';
-                }
-            }
-        }
-
-        if (str_contains($instLower, 'كبر') || str_contains($instLower, 'bigger') || str_contains($instLower, 'large')) {
-            foreach ($edited['objects'] as &$o) {
-                if ($o['type'] === 'text' && ($o['fontSize'] ?? 0) >= 30) {
-                    $o['fontSize'] = min(90.0, (float)$o['fontSize'] * 1.3);
-                }
-            }
-        }
-
-        $sanitized = sanitize_design_json($edited, $width, $height);
-        return [
-            'success'  => true,
-            'data'     => $sanitized,
-            'provider' => 'internal_engine'
         ];
     }
 
@@ -1402,9 +966,10 @@ Return the complete updated JSON:";
         }
     }
 
-    if ($parsed === null) {
+    if ($parsed === null || !isset($parsed['objects']) || !is_array($parsed['objects'])) {
         return [
             'success' => false,
+            'code'    => 'INVALID_JSON',
             'error'   => t('ai_invalid_response')
         ];
     }
@@ -1414,7 +979,8 @@ Return the complete updated JSON:";
     return [
         'success'  => true,
         'data'     => $sanitized,
-        'provider' => $res['provider']
+        'provider' => $res['provider'],
+        'model'    => $res['model'] ?? null
     ];
 }
 
