@@ -183,11 +183,11 @@ async def main():
     proc = launch_chrome()
     try:
         urls = [
-            "http://localhost/ai-design-studio/index.php",
-            "http://localhost/ai-design-studio/login.php",
-            "http://localhost/ai-design-studio/register.php",
-            "http://localhost/ai-design-studio/history.php",
-            "http://localhost/ai-design-studio/profile.php"
+            "http://localhost/layerly/index.php",
+            "http://localhost/layerly/login.php",
+            "http://localhost/layerly/register.php",
+            "http://localhost/layerly/history.php",
+            "http://localhost/layerly/profile.php"
         ]
         for u in urls:
             await diagnose_page(u)

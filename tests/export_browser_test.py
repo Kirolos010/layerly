@@ -88,7 +88,7 @@ async def run_browser_phase_3():
         # FLOW 1: Studio Home, Project Name & Export Modal Interactivity
         # -------------------------------------------------------------
         print("\n--- [FLOW 1] Testing Export Modal & Project Controls on index.php ---", flush=True)
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/index.php"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/index.php"})
         await wait_nav()
         await asyncio.sleep(1.5)
 
@@ -171,7 +171,7 @@ async def run_browser_phase_3():
         # FLOW 3: Templates Gallery & Loading Template into Editor
         # -------------------------------------------------------------
         print("\n--- [FLOW 3] Testing Templates Gallery (templates.php) ---", flush=True)
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/templates.php"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/templates.php"})
         await wait_nav()
         await asyncio.sleep(1.0)
 
@@ -214,7 +214,7 @@ async def run_browser_phase_3():
 
         # Load Template into Editor
         print("\n--- [FLOW 4] Loading Template (ramadan-sale-post) into Studio Canvas ---", flush=True)
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/index.php?template=ramadan-sale-post"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/index.php?template=ramadan-sale-post"})
         await wait_nav()
         await asyncio.sleep(2.0)
 
@@ -245,7 +245,7 @@ async def run_browser_phase_3():
         # FLOW 5: "My Designs" Projects Page Interactivity
         # -------------------------------------------------------------
         print("\n--- [FLOW 5] Testing 'My Designs' Page (projects.php) ---", flush=True)
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/projects.php"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/projects.php"})
         await wait_nav()
         await asyncio.sleep(1.0)
 

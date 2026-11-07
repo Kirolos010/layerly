@@ -89,7 +89,7 @@ async def run_full_suite():
         # FLOW 1: Home Page & Controls
         # -------------------------------------------------------------
         print("\n--- [FLOW 1] Testing Home Page, Language, Prompt Box, Enhance, Generate ---", flush=True)
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/index.php?lang=en"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/index.php?lang=en"})
         await wait_nav()
         await asyncio.sleep(1.0)
 
@@ -195,7 +195,7 @@ async def run_full_suite():
         test_pass = "StrongPass123"
 
         # Register
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/register.php"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/register.php"})
         await wait_nav()
         reg_ok = await evaluate(f"""
         (() => {{
@@ -216,7 +216,7 @@ async def run_full_suite():
         print(f"  [2.1] Register user and auto-login: {results['register_flow']} (Badge: '{user_badge}')", flush=True)
 
         # Logout
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/logout.php"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/logout.php"})
         await wait_nav()
         await asyncio.sleep(0.5)
         has_login_btn = await evaluate("Boolean(document.querySelector('a[href=\"login.php\"]'))")
@@ -224,7 +224,7 @@ async def run_full_suite():
         print(f"  [2.2] Logout successfully: {results['logout_flow']}", flush=True)
 
         # Login
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/login.php"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/login.php"})
         await wait_nav()
         await evaluate(f"""
         (() => {{
@@ -243,7 +243,7 @@ async def run_full_suite():
         # FLOW 3: Editor Functionality (Select, Move, Resize, Props, Layers, Undo/Redo, Zoom)
         # -------------------------------------------------------------
         print("\n--- [FLOW 3] Testing Editor Actions: Shapes, Properties, Layers, Undo/Redo, Zoom ---", flush=True)
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/index.php"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/index.php"})
         await wait_nav()
         await asyncio.sleep(1.0)
 
@@ -333,7 +333,7 @@ async def run_full_suite():
         # FLOW 4: History Page (Open and Delete)
         # -------------------------------------------------------------
         print("\n--- [FLOW 4] Testing History & My Designs Page ---", flush=True)
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/history.php"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/history.php"})
         await wait_nav()
         await asyncio.sleep(0.5)
 
@@ -365,7 +365,7 @@ async def run_full_suite():
         # FLOW 5: Keyboard Shortcuts (Undo, Redo, Duplicate, Delete)
         # -------------------------------------------------------------
         print("\n--- [FLOW 5] Testing Keyboard Shortcuts ---", flush=True)
-        await send("Page.navigate", {"url": "http://localhost/ai-design-studio/index.php"})
+        await send("Page.navigate", {"url": "http://localhost/layerly/index.php"})
         await wait_nav()
         await asyncio.sleep(0.5)
 

@@ -7,7 +7,7 @@ import urllib.request
 import websockets
 
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-BASE_URL = "http://localhost/ai-design-studio"
+BASE_URL = "http://localhost/layerly"
 
 def launch_chrome():
     cmd = [

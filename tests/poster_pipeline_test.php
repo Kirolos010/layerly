@@ -153,7 +153,7 @@ if ($art['success'] && !empty($art['art_direction']['text_blocks'])) {
 // Test 5: Endpoints HTTP Accessibility
 // -----------------------------------------------------------------------------
 echo "\n[5] Testing Endpoints (Quota, Proxy, Upload)...\n";
-$quotaRaw = @file_get_contents('http://localhost/ai-design-studio/api/poster-quota.php');
+$quotaRaw = @file_get_contents('http://localhost/layerly/api/poster-quota.php');
 if ($quotaRaw) {
     $quotaData = json_decode($quotaRaw, true);
     assert_test($quotaData['success'] === true, "api/poster-quota.php returns success=true via HTTP");

@@ -23,7 +23,7 @@ The project includes a root `.htaccess` with:
 
 Ensure your Apache host configuration has:
 ```apache
-<Directory /path/to/ai-design-studio>
+<Directory /path/to/layerly>
     AllowOverride All
     Require all granted
 </Directory>
@@ -38,7 +38,7 @@ If using Nginx, configure clean URLs and access blocks in your server block:
 server {
     listen 80;
     server_name example.com;
-    root /path/to/ai-design-studio;
+    root /path/to/layerly;
     index index.php;
 
     # Protect sensitive paths

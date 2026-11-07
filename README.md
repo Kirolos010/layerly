@@ -40,7 +40,7 @@ Built entirely with **vanilla PHP 8+ (zero heavyweight frameworks, zero Composer
 ## 1. System Architecture & Folder Structure
 
 ```
-ai-design-studio/
+Layerly/
 ├── auth/                      # Authentication & session pages
 │   ├── login.php              # User login
 │   ├── register.php           # User registration
@@ -161,7 +161,7 @@ ai-design-studio/
 ## 4. Local Setup (Laragon / Built-in Server)
 
 ### Option A: With Laragon (Recommended on Windows)
-1. Clone or place the repository in `C:\laragon\www\ai-design-studio`.
+1. Clone or place the repository in `C:\laragon\www\layerly`.
 2. Start All Services in Laragon (Apache & MySQL).
 3. Copy `config.example.php` to `config.php`:
    ```bash
@@ -179,12 +179,12 @@ ai-design-studio/
    ```bash
    php tools/migrate.php
    ```
-6. Access the studio at: `http://ai-design-studio.test/` or `http://localhost/ai-design-studio/`.
+6. Access the studio at: `http://layerly.test/` or `http://localhost/layerly/`.
 
 ### Option B: With PHP Built-in Server
 1. Navigate to the project root:
    ```bash
-   cd ai-design-studio
+   cd layerly
    cp config.example.php config.php
    # Edit config.php with your MySQL and Gemini credentials
    php tools/migrate.php
@@ -302,7 +302,7 @@ Individual test suites:
 
 ## 4. التشغيل المحلي عبر Laragon أو سيرفر PHP المدمج
 
-1. ضع المجلد في مسار `C:\laragon\www\ai-design-studio`.
+1. ضع المجلد في مسار `C:\laragon\www\layerly`.
 2. انسخ ملف الإعدادات:
    ```bash
    cp config.example.php config.php
@@ -312,7 +312,7 @@ Individual test suites:
    ```bash
    php tools/migrate.php
    ```
-5. افتح المتصفح على: `http://localhost/ai-design-studio/` أو عبر منفذ PHP المدمج `php -S localhost:8000`.
+5. افتح المتصفح على: `http://localhost/layerly/` أو عبر منفذ PHP المدمج `php -S localhost:8000`.
 
 ---
 

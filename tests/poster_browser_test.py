@@ -7,7 +7,7 @@ import urllib.request
 import websockets
 
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-BASE_URL = "http://localhost/ai-design-studio"
+BASE_URL = "http://localhost/layerly"
 REF_IMAGE_PATH = r"C:\Users\Kirolos Samir0\.gemini\antigravity\brain\17b16749-06fc-422d-bb1e-f521886da31d\.user_uploaded\media_1794006378956_1c6f42a9.jpg"
 
 def launch_chrome():

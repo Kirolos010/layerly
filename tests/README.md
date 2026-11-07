@@ -36,5 +36,5 @@ python tests/i18n_browser_test.py
 python tests/hybrid_browser_test.py
 python tests/poster_browser_test.py
 ```
-*(Requires a local web server running at `http://localhost/ai-design-studio` or `http://localhost:8000`)*
+*(Requires a local web server running at `http://localhost/layerly` or `http://localhost:8000`)*
 

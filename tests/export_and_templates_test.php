@@ -132,7 +132,7 @@ function http_req(string $url, string $method = 'GET', $data = null, array $head
     ];
 }
 
-$baseUrl = 'http://localhost/ai-design-studio';
+$baseUrl = 'http://localhost/layerly';
 
 // Test api/templates.php list action via HTTP
 $listRes = http_req("{$baseUrl}/api/templates.php?action=list");

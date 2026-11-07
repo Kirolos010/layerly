@@ -54,8 +54,8 @@ function http_get(string $url, bool $followRedirects = false): array {
 
 // Auto-detect working local test domain
 $testHosts = [
-    'http://ai-design-studio.test',
-    'http://localhost/ai-design-studio',
+    'http://layerly.test',
+    'http://localhost/layerly',
     'http://127.0.0.1:8000'
 ];
 
@@ -74,7 +74,7 @@ foreach ($testHosts as $host) {
 }
 
 if (!$baseUrl) {
-    $baseUrl = 'http://localhost/ai-design-studio';
+    $baseUrl = 'http://localhost/layerly';
 }
 
 echo "========================================================\n";
